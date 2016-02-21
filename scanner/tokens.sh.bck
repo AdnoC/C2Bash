@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+echo 'tokens'
+declare -gA T=()
+declare -gA TMP=()
+
+TMP["DECIMAL_DIGIT"]='[0-9]'
+TMP["OCTAL_DIGIT"]='[0-7]'
+TMP["HEXADECIMAL_DIGIT"]='[0-9a-fA-F]'
+TMP["SINGLE_LETTER"]='[A-Za-z_$]'
+TMP["OPTIONAL_EXPONENT"]="[eE][+-]?${TMP['DECIMAL_DIGIT']}+"
+TMP["WHITESPACE"]="[[:space:]]+"
+# declare -g T["SIMPLE_ESCAPE"]="([A-Za-z'\"?#*\\])"
+TMP["SIMPLE_ESCAPE"]="([abfnrtv'\"\\?])"
+TMP["OCTAL_ESCAPE"]="(${TMP['OCTAL_DIGIT']}{1,3})"
+TMP["HEX_ESCAPE"]="([xX]${TMP['HEXADECIMAL_DIGIT']}{1,8})"
+
+TMP["CHARACTER_LITERAL"]="([^\'\\\n]|([\\](${TMP['SIMPLE_ESCAPE']}|${TMP['OCTAL_ESCAPE']}|${TMP['HEX_ESCAPE']})))"
+TMP["STRING_LITERAL"]="([^\'\\\n]|([\\](${TMP['SIMPLE_ESCAPE']}|${TMP['OCTAL_ESCAPE']}|${TMP['HEX_ESCAPE']})))"
+TMP["SPECIAL_CHARS"]='{}()\[\]'
+
+### Constants
+declare -g T["CHARACTER_CONSTANT"]="'${TMP['CHARACTER_LITERAL']}'"
+declare -g T["FLOATINGconstant"]="(${TMP['DECIMAL_DIGIT']}*\.${TMP['DECIMAL_DIGIT']}*)|(${TMP['DECIMAL_DIGIT']}*\.${TMP['DECIMAL_DIGIT']}*${TMP['WHITESPACE']}?${TMP['OPTIONAL_EXPONENT']})|(${TMP['DECIMAL_DIGIT']}+${TMP['WHITESPACE']}?${TMP['OPTIONAL_EXPONENT']})"
+declare -g T["INTEGERconstant"]="(0${TMP['OCTAL_DIGIT']}+)|(0[xX]${TMP['HEXADECIMAL_DIGIT']}+)|(${TMP['DECIMAL_DIGIT']}+)"
+declare -g T["STRING_CONSTANT"]="\"${TMP['STRING_LITERAL']}*\""
+# declare -g T["STRING_CONSTANT"]="[^\\]\"${TMP['STRING_LITERAL']}*[^\\]\""
+declare -g T["WHITESPACE"]="${TMP['WHITESPACE']}"
+
+### Special Symbols
+declare -g T["LBRACE"]='\{'
+declare -g T["LBRACKET"]='\['
+declare -g T["LPAREN"]='\('
+declare -g T["RBRACE"]='\}'
+declare -g T["RBRACKET"]='\]'
+declare -g T["RPAREN"]='\)'
+
+declare -g T["SEMICOLON"]=';'
+
+### Operators
+declare -g T["AMPERSAND"]='&'
+declare -g T["ANDAND"]='&&'
+declare -g T["ANDassign"]='&='
+declare -g T["ARROW"]='->'
+declare -g T["ASSIGNOP"]='='
+declare -g T["DECR"]='--'
+declare -g T["DIVassign"]='\/='
+declare -g T["EQ"]='=='
+declare -g T["ERassign"]='\^='
+declare -g T["HAT"]='\^'
+# Only the first 31 characters of identifiers are significant
+declare -g T["IDENTIFIER"]="(${TMP['SINGLE_LETTER']}|_)(${TMP['SINGLE_LETTER']}|${TMP['DECIMAL_DIGIT']}|_)*"
+# declare -g T["TYPEDEFname"]="${T['IDENTIFIER']}"
+declare -g T["INCR"]='\+\+'
+declare -g T["LS"]='<<'
+declare -g T["LSassign"]='<<='
+declare -g T["MINUS"]='-'
+declare -g T["MINUSassign"]='-='
+declare -g T["MOD"]='%'
+declare -g T["MODassign"]='%='
+declare -g T["MULTassign"]='\*='
+declare -g T["NE"]='!='
+declare -g T["NOT"]='!'
+declare -g T["OR"]='\|'
+declare -g T["ORassign"]='\|='
+declare -g T["OROR"]='\|\|'
+declare -g T["PLUS"]='\+'
+declare -g T["PLUSassign"]='\+='
+declare -g T["QUESTION"]='\?'
+declare -g T["RS"]='>>'
+declare -g T["RSassign"]='>>='
+declare -g T["TWIDDLE"]='~'
+
+### Keywords
+declare -g T["AUTO"]='auto'
+declare -g T["BREAK"]='break'
+declare -g T["CASE"]='case'
+declare -g T["CHAR"]='char'
+declare -g T["CONST"]='const'
+declare -g T["CONTINUE"]='continue'
+declare -g T["DEFAULT"]='default'
+declare -g T["DO"]='do'
+declare -g T["DOUBLE"]='double'
+declare -g T["ELSE"]='else'
+declare -g T["ENUM"]='enum'
+declare -g T["EXTERN"]='extern'
+declare -g T["FLOAT"]='float'
+declare -g T["FOR"]='for'
+declare -g T["GOTO"]='goto'
+declare -g T["IF"]='if'
+declare -g T["INT"]='int'
+declare -g T["LONG"]='long'
+declare -g T["REGISTER"]='register'
+declare -g T["RETURN"]='return'
+declare -g T["SHORT"]='short'
+declare -g T["SIGNED"]='signed'
+declare -g T["SIZEOF"]='sizeof'
+declare -g T["STATIC"]='static'
+declare -g T["STRUCT"]='struct'
+declare -g T["SWITCH"]='switch'
+declare -g T["TYPEDEF"]='typedef'
+declare -g T["UNION"]='union'
+declare -g T["UNSIGNED"]='unsigned'
+declare -g T["VOID"]='void'
+declare -g T["VOLATILE"]='volatile'
+declare -g T["WHILE"]='while'
+
+declare temp=$(declare -p T)
+declare -gA __TOKEN_REGEX
+eval "${temp/T=/__TOKEN_REGEX=}"

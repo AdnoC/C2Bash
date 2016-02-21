@@ -1,0 +1,328 @@
+[THIS IS A LINK TO THE C STANDARD](http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf)
+## Namespaces
+C has namespaces for:  
+
+* structure tags
+* members of each struct/union
+* labels
+* everything else
+
+&nbsp;
+
+## AST
+Nodes with generated names of '\_\_AST_node#'  
+Nodes are associated arrays
+
+# Scope
+Default scope is 'file'
+Functional prototypes have scopes
+
+
+Need special parsing for mathematic expression (to handle order of operations)
+
+# Properties
+
+*Base*
+
+class:
+
+: The unit of grammar
+
+type:
+
+: The specific thing the node represents
+
+children:
+
+: Child nodes of the tree
+
+: Array<node_ref>
+
+*Priative Literals*
+
+value:
+
+: The value of the primitive
+
+children:
+
+: Has 0
+
+*Unary Operator*
+
+children:
+
+ ~ Has 1
+
+*Binary Operator*
+
+children:
+
+: Has 2
+
+*Function Defenition*
+
+typeSignature:
+
+: The type the function returns
+
+qualifiers:
+
+: Things that modify the type of function
+
+: Potential values are: virtual, pure, inline, explicit, const, operator
+
+name:
+
+: The name of the function
+
+arguments:
+
+: The arguments this function takes
+
+: Has n
+
+: Made up of Variable Declarations
+
+children:
+
+: Has 1 (a block)
+
+*Function Prototype*
+
+typeSignature:
+
+: The type the function returns
+
+qualifiers:
+
+: Things that modify the type of function
+
+: Potential values are: virtual, pure, inline, explicit, const, operator
+
+name:
+
+: The name of the function
+
+arguments:
+
+: The arguments this function takes
+
+: Has n
+
+: Made up of Variable Declarations
+
+children:
+
+: Has 0
+
+*Block*  
+Used to signify a potential change in scope
+
+children:
+: Has n
+
+*Function Call*
+
+name:
+
+: Name of the function to call
+
+children:
+
+: The arguments of the function
+
+: Has n
+
+*Variable Declaration*
+
+typeSignature:
+
+: The type the variable has
+
+qualifiers:
+
+: Things that modify the behavior of variables
+
+: Potential values are: volatile, const
+
+initValue:
+
+: Maybe????
+
+: The intial value a variable has
+
+: Optional
+
+*Pointer Type*  
+Used to signify a pointer to a type
+Should be used as a wrapper around an actual type
+
+typeSignature:
+
+: The type this is a pointer for
+
+*Aggregate Type*  
+Things like structs and unions
+
+name:
+
+: The name of the struct type
+
+children:
+
+: Has n
+
+:   Should just be Variable Declarations
+
+
+*If/Else*
+
+children:
+
+: 2/3
+
+:   Has 2 if it an If
+
+:   Has 3 if its an if/else
+
+*While*
+
+children:
+
+: Has 2
+
+: One is an expression to test with
+
+: One is either an expression or a block
+
+*Do While*
+
+children:
+
+: Has 2
+
+: One is an expression to test with
+
+: One is either an expression or a block
+
+*For*
+
+children:
+
+: Has 4
+
+: One is the var inits
+
+: One is the test
+
+: One is the iteration expression
+
+: One is either an expression or a block
+
+*Switch*
+
+children:
+
+: Has 2
+
+: One is the thing to test
+
+: One is the block of cases
+
+*Case*
+
+children:
+
+: Has 1/2
+
+: One is the label
+
+: One is the optional expression/block
+
+*Label*
+
+value:
+
+: The value/name of the label
+
+children:
+
+: Has 1 (and expression/block)
+
+*Enum Type*
+
+name:
+
+: The name of this enum type
+
+children:
+
+: Has n
+
+:   They should all be of type Enum
+
+*Enum*
+
+parent:
+
+: The name of the enum type this belongs to
+
+value:
+
+: The value/name of this enum
+
+children:
+
+: Has 0
+
+*Array*
+
+typeSignature:
+
+: The type this array is
+
+length:
+
+: The length the array is initialized to
+
+*Variable Reference*
+
+value:
+
+: The name of the variable this is referencing
+children:
+
+: Has 0
+
+
+# Special
+
+*Control Flow*
+
+* Continue
+
+* Break
+
+*Other*
+
+* Empty Statement/expression
+
+&nbsp;
+
+# General notes on AST flow
+
+*Function Declaration*
+
+~~~ regex
+[qualifier]* type[*]* identifier([variableDeclaration[, variableDeclaration]*]) {expression*}
+~~~
+
+*Variable Declaration*
+
+~~~ regex
+[qualifier]* type[*]* identifier[\[int\]][ = (primitiveLiteral | expression)]
+~~~
+
+
+Expressions are in 6.5.1
