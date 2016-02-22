@@ -12,6 +12,7 @@ Queue lineNumbers
 
 # String::tokenName, String::tokenValue, Int::lineNumber
 function addToken() {
+echo "adding token $1"
   Queue::push tokenTypes "$1"
   Queue::push tokenValues "$2"
   Queue::push lineNumbers "$3"
@@ -82,7 +83,6 @@ function scanLine() {
         line="${line:$longestLength}"
         # echo "line in next loop will be '$line'"
       else
-        addToken "$T_LINE_END" "" "$2"
         return 0
       fi
     else
@@ -100,7 +100,7 @@ function scanFile() {
   declare lineNum=0
   while read p; do
     scanLine "$p" $lineNum
-    addToken "END_LINE" '' $lineNum
+    # addToken $T_LINE_END
     let lineNum=lineNum+1
   done < "$1"
   echo "Finished scanning"
@@ -110,7 +110,7 @@ function scanFile() {
   while Queue::length tokenTypes len && [ $len -gt 0 ]; do
     Queue::pop tokenTypes tok
     Queue::pop tokenValues val
-    echo "$tok  $val"
+    echo "${__TOKEN_MAP[$tok]}  $val"
   done
 }
 

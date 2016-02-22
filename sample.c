@@ -1,6 +1,7 @@
 main	()
-{
+<%
     printf("Hello World");
+    printf("");
     int i = 0;
     i++;
 
