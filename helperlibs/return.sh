@@ -15,9 +15,8 @@ function declaredRefUnset() {
   unset "$1"
 }
 
-# This function is a lot more complex than it needs to be in order to make sure
-# that it can return to a pointer with the same name as a variable it uses.
-# Pass __RETURN_REFS with a quoted $*
+# Pass __RETURN_REFS with a quoted $*, e.g. "$*"
+# Explicitly passing "$*" isn't needed if you are using the alias.
 # String::__RETURN_REFS, ...String::value
 function @return() {
   # Disable the debug trap for this function
@@ -36,62 +35,13 @@ function @return() {
       break;
     fi
 
-    if [[ "${__RETURN_REFS[$__RETURN_INDEX]}" != "__RETURN_REF" ]]; then
-      declare -n __RETURN_REF="${__RETURN_REFS[$__RETURN_INDEX]}"
+    declare -n __RETURN_REF="${__RETURN_REFS[$__RETURN_INDEX]}"
 
-      if [[ "${__RETURN_REFS[$__RETURN_INDEX]}" == "__RETURN_DEPTH" ]]; then
-        declare tmp="$__RETURN_DEPTH"
-        declaredRefUnset __RETURN_DEPTH
-      else 
-        if [[ "${__RETURN_REFS[$__RETURN_INDEX]}" == "__RETURN_REFS" ]]; then
-          declare tmp="$__RETURN_REFS"
-          declaredRefUnset __RETURN_REFS
-        else 
-          if [[ "${__RETURN_REFS[$__RETURN_INDEX]}" == "__RETURN_INDEX" ]]; then
-            declare tmp="$__RETURN_INDEX"
-            declaredRefUnset __RETURN_INDEX
-          fi
-        fi
-
-        if ! [ "$__RETURN_REF" -lt "$__RETURN_DEPTH" ] 2>/dev/null; then
-          declaredRefUnset "${__RETURN_REFS[$__RETURN_INDEX]}"
-        fi
-      fi
-
-      __RETURN_REF="$__RETURN_VAL"
-
-      if [ -n "$tmp" ]; then
-        if [[ "${__RETURN_REFS[$tmp]}" == "__RETURN_INDEX" ]]; then
-          declare __RETURN_INDEX=$tmp
-          declaredRefUnset tmp
-        else 
-          if [[ "${tmp[$__RETURN_INDEX]}" == "__RETURN_REFS" ]]; then
-            declare -a __RETURN_REFS="$tmp"
-            declaredRefUnset tmp
-          else 
-            if [[ "${__RETURN_REFS[$__RETURN_INDEX]}" == "__RETURN_DEPTH" ]]; then
-              declare __RETURN_DEPTH="$tmp"
-              declaredRefUnset tmp
-            fi
-          fi
-        fi
-      fi
-    else
-      if [[ "${__RETURN_REFS[$__RETURN_INDEX]}" == "__RETURN_VAL" ]]; then
-        declare -n __RETURN_REF="${__RETURN_REFS[$__RETURN_INDEX]}"
-        declare tmp="$__RETURN_VAL"
-        declaredRefUnset __RETURN_VAL
-        __RETURN_REF="$tmp"
-        declaredRefUnset tmp
-        declare __RETURN_VAL
-      else
-        declaredRefUnset __RETURN_REF
-        declare -n tmp="__RETURN_REF"
-        tmp="$__RETURN_VAL"
-        declaredRefUnset tmp
-      fi
+    if ! [ "$__RETURN_REF" -lt "$__RETURN_DEPTH" ] 2>/dev/null; then
+      declaredRefUnset "${__RETURN_REFS[$__RETURN_INDEX]}"
     fi
 
+    __RETURN_REF="$__RETURN_VAL"
 
     let __RETURN_INDEX=__RETURN_INDEX+1
   done
@@ -140,12 +90,8 @@ function declareDefault() {
   # This makes sure that we wait until the variable was actually declared and local before we initialize it.
   # Also skip if we are declaring a global variable.
   if [[ "$2" == "declare" ]] && ! [[ "$*" =~ = ]] && ! [[ "$*" =~ -[^[:space:]]*g ]]; then
-    echo 'deferring declare'
     declare -g __DEFERRED_DECLARE=("$@")
-  else
-    echo 'not deferring'
   fi
   return 0
 }
-
-# trap 'declareDefault "${#FUNCNAME[@]}" $BASH_COMMAND' DEBUG
+trap 'declareDefault "${#FUNCNAME[@]}" $BASH_COMMAND' DEBUG
