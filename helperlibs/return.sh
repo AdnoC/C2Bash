@@ -5,8 +5,8 @@ shopt -s expand_aliases
 # alias @return='echo "RETURN PARAM: $*" '
 alias @return='@return "$*" '
 
-# Use global variables to 
-declare -g __RETURN___RETURN_REFS
+# Use global variables to prevent shadowing
+declare -g __RETURN_REFS
 declare -g __RETURN_INDEX
 declare -g __RETURN_DEPTH
 declare -g __RETURN_REF
@@ -15,7 +15,6 @@ declare -g __RETURN_REF
 # String::__RETURN_REFS, ...String::value
 function @return() {
   unsetTrap
-  declare -p retLen
   declare -g __RETURN_DEPTH="${#FUNCNAME[@]}"
   let __RETURN_DEPTH=__RETURN_DEPTH-1
   declare -a __RETURN_REFS=($1)
@@ -62,52 +61,13 @@ function declareDefault() {
   return 0
 }
 
-function retTest() {
-  hi='yo'
-  echo 'in retTest'
-  echo "${#FUNCNAME[@]}"
-  declare retLen='qwe'
-  echo $__REF_VAR
-  declare retVal="Hello World"
-  echo "retTest: retLen before return = $retLen"
-  @return "$retLen" "$retVal" "asdf"  "asdfadfwer"
-  echo "retTest: retLen after return = $retLen"
-  return 0
-}
-
-function drtSep() {
-  declare retLen val
-
-  retTest retLen val val2
-  @return "$retLen" "$val"
-  return 0
-}
-
-function doRetTest() {
-  echo 'in doRetTest'
-  echo "${FUNCNAME[@]}"
-  declare retLen val val2
-  declare a wer ads=cxz wer
-  declare awqer
-  declare -i jasd
-  echo "setting retLen to 'q'"
-  retLen='q'
-  # retTest retLen val val2
-  drtSep retLen val val2
-  echo "dRt retLen = $retLen"
-  echo "dRT val $val"
-  echo "dRT val2 $val2"
-}
-
 function setTrap() {
   trap DEBUG
 }
+
 function unsetTrap() {
   trap '' DEBUG
 }
+
 trap 'declareDefault "${#FUNCNAME[@]}" $BASH_COMMAND' DEBUG
 
-# doRetTest
-# echo "global retLen = $retLen"
-# echo 'global val'
-# echo $val
