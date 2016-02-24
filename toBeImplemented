@@ -1,4 +1,0 @@
-Array::merge array1 array2
-Tree pointer
-Tree::set pointer key value
-Tree::get pointer key pointer
