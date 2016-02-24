@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
+include "$C2BASH_HOME"/helperlibs/return.sh
 
 # If passed a string only converts the first char
-# Pointer::ret, String::char
+# Pointer::int, String::char
 function Char::toInt() {
-  declare -n ret=$1
-  ret=$(printf '%d' "'$2")
+  @return "$(printf '%d' "'$2")"
+  return 0
 }

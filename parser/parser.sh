@@ -26,6 +26,18 @@ setId NODE_IDENTIFIER
 # All the try* functions return NO_MATCH if there wasn't a match
 # They also take a Pointer::newNode as their first argument
 
+function enterScope() {
+  declare -n scopes=$scopeStack
+  declare newScope
+  Queue newScope
+  Stack::shift scopes newScope
+}
+function exitScope() {
+  declare -n scopes=$scopeStack
+  declare tmp
+  Stack::unshift tmp scopes
+}
+
 # Pointer::tokenType, Pointer::tokenValue, Pointer::lineNumber, Pointer::stateId, Bool::noSkipWhitespace, Bool::noSkipComment
 function nextToken() {
   declare -n ret1=$1
@@ -34,20 +46,20 @@ function nextToken() {
   declare -n retId=$4
 
   declare stateId
-  Stack::length tokenTypes stateId
+  Stack::length stateId tokenTypes
   retId=$stateId
 
   declare tType tVal lNum
-  Stack::unshift tokenTypes tType
-  Stack::unshift tokenValues tVal
-  Stack::unshift lineNumbers lNum
+  Stack::unshift tType tokenTypes
+  Stack::unshift tVal tokenValues
+  Stack::unshift lNum lineNumbers
   Stack::shift oldTypes $tType
   Stack::shift oldValues "$tVal"
   Stack::shift oldLineNumbers "$lNum"
   while { [ -z "$5" ] && [ $tType -eq $T_WHITESPACE ]; } || { [ -z "$6" ] && [ $tType -eq $T_COMMENT ]; }; do
-    Stack::unshift tokenTypes tType
-    Stack::unshift tokenValues tVal
-    Stack::unshift lineNumbers lNum
+    Stack::unshift tType tokenTypes
+    Stack::unshift tVal tokenValues
+    Stack::unshift lNum lineNumbers
     Stack::shift oldTypes $tType
     Stack::shift oldValues "$tVal"
     Stack::shift oldLineNumbers "$lNum"
@@ -77,7 +89,7 @@ function getState() {
 function saveState() {
   declare -n ret=$1
   declare length
-  Stack::length tokenTypes length
+  Stack::length length tokenTypes
   ret=$length
 }
 
@@ -85,26 +97,26 @@ function saveState() {
 function resetToken() {
   declare tType tVal lNum
   declare length
-  Stack::length tokenTypes length
+  Stack::length length tokenTypes
   while [ $1 -lt $length ]; do
-    Stack::unshift oldTypes tType
-    Stack::unshift oldValues tVal
-    Stack::unshift oldLineNumbers lNum
+    Stack::unshift tType oldTypes
+    Stack::unshift tVal oldValues
+    Stack::unshift lNum oldLineNumbers
     Stack::shift tokenTypes $tType
     Stack::shift tokenValues "$tVal"
     Stack::shift lineNumbers $lNum
 
-    Stack::length tokenTypes length
+    Stack::length length tokenTypes
   done
   while [ $1 -gt $length ]; do
-    Stack::unshift tokenTypes tType
-    Stack::unshift tokenValues tVal
-    Stack::unshift lineNumbers lNum
+    Stack::unshift tType tokenTypes
+    Stack::unshift tVal tokenValues
+    Stack::unshift lNum lineNumbers
     Stack::shift oldTypes $tType
     Stack::shift oldValues "$tVal"
     Stack::shift oldLineNumbers "$lNum"
 
-    Stack::length tokenTypes length
+    Stack::length length tokenTypes
   done
 }
 
@@ -128,9 +140,9 @@ function tryIntConstant() {
 
     declare -n ret=$1
     declare node
-    Tree node
-    Tree::set node $NODE_CLASS $G_INTEGER_CONSTANT
-    Tree::set node $NODE_VALUE $intVal
+    Array node
+    Array::set node $NODE_CLASS $G_INTEGER_CONSTANT
+    Array::set node $NODE_VALUE $intVal
 
     ret=$node
     return 0
@@ -145,9 +157,9 @@ function tryFloatConstant() {
     declare -n ret=$1
 
     declare node
-    Tree node
-    Tree::set node $NODE_CLASS $G_FLOAT_CONSTANT
-    Tree::set node $NODE_VALUE $3
+    Array node
+    Array::set node $NODE_CLASS $G_FLOAT_CONSTANT
+    Array::set node $NODE_VALUE $3
 
     ret=$node
     return 0;
@@ -162,9 +174,9 @@ function tryEnumConstant() {
     declare -n ret=$1
 
     declare node
-    Tree node
-    Tree::set node $NODE_CLASS $G_ENUMERATION_CONSTANT
-    Tree::set node $NODE_VALUE "$3"
+    Array node
+    Array::set node $NODE_CLASS $G_ENUMERATION_CONSTANT
+    Array::set node $NODE_VALUE "$3"
 
     ret=$node
     return 0
@@ -198,10 +210,10 @@ function tryString() {
     fi
 
     declare node
-    Tree node
-    Tree::set node $NODE_CLASS $G_STRING_LITERAL
-    Tree::set node $NODE_TYPE $G_FUNC_NAME
-    Tree::set node $NODE_VALUE "$3"
+    Array node
+    Array::set node $NODE_CLASS $G_STRING_LITERAL
+    Array::set node $NODE_TYPE $G_FUNC_NAME
+    Array::set node $NODE_VALUE "$3"
 
     ret=$node
     return 0
@@ -256,8 +268,8 @@ function tryBaseTypeSpecifier() {
   if [ $t -ne 0 ]; then
     declare -n ret=$1
     declare node
-    Tree node
-    Tree::set node $NODE_CLASS $t
+    Array node
+    Array::set node $NODE_CLASS $t
 
     ret=$node
     return 0
@@ -280,16 +292,16 @@ function tryEnumerator() {
     declare -n ret=$1
 
     declare node
-    Tree node
-    Tree::set node $NODE_CLASS $G_ENUMERATOR
-    Tree::set node $NODE_IDENTIFIER "$3"
+    Array node
+    Array::set node $NODE_CLASS $G_ENUMERATOR
+    Array::set node $NODE_IDENTIFIER "$3"
 
     declare nextType nextValue lineNum stateId
     nextToken nextType nextValue lineNum stateId
     if [ $nextType -eq $T_ASSIGN_OP ]; then
       nextToken nextType nextValue lineNum
       if tryConstantExpression newNode $nextType "$nextValue"; then
-        Tree::set node $NODE_VALUE "$newNode"
+        Array::set node $NODE_VALUE "$newNode"
       else
         parseError "Enumerators must be assigned a constant value if they are to be assigned" $lineNum
       fi
@@ -327,10 +339,10 @@ function tryTypeQualifier() {
   if [ $t -ne 0 ]; then
     declare -n ret=$1
     declare node
-    Tree node
+    Array node
 
-    Tree::set node $NODE_CLASS $G_TYPE_QUALIFIER
-    Tree::set node $NODE_TYPE $t
+    Array::set node $NODE_CLASS $G_TYPE_QUALIFIER
+    Array::set node $NODE_TYPE $t
 
     ret=$node
     return 0
@@ -345,24 +357,24 @@ function trySpecifierQualifierList() {
   if tryTypeSpecifier newNode $2 "$3" || tryTypeQualifier newNode $2 "$3"; then
     declare ret=$1
     declare node
-    Tree node
+    Array node
     declare values
     Stack values
 
-    Tree::set node $NODE_CLASS $G_SPECIFIER_QUALIFIER_LIST
+    Array::set node $NODE_CLASS $G_SPECIFIER_QUALIFIER_LIST
     Stack::shift values $newNode
 
     declare nextType nextValue lineNum stateId
     nextToken nextType nextValue lineNum stateId
     if trySpecifierQualifierList newNode $nextType "$nextValue"; then
       declare otherVals
-      Tree::get newNode $NODE_VALUE otherVals
+      Array::get otherVals newNode $NODE_VALUE
       Array::Merge values otherVals
     else
       resetToken $stateId
     fi
 
-    Tree::set node $NODE_VALUE $values
+    Array::set node $NODE_VALUE $values
 
     ret=$node
     return 0
@@ -376,23 +388,23 @@ function tryTypeQualifierList() {
   declare newNode
   if tryTypeQualifier newNode $2 "$3"; then
     declare node values
-    Tree node
+    Array node
     Stack values
 
-    Tree::set node $NODE_CLASS $G_TYPE_QUALIFIER_LIST
+    Array::set node $NODE_CLASS $G_TYPE_QUALIFIER_LIST
     Stack::shift values $newNode
 
     declare nextType nextValue lineNum stateId
     nextToken nextType nextValue lineNum stateId
     if tryTypeQualifier newNode $nextType "$nextValue"; then
       declare otherVals
-      Tree::get newNode $NODE_VALUE otherVals
+      Array::get otherVals newNode $NODE_VALUE
       Array::merge values otherVals
     else
       resetToken $stateId
     fi
 
-    Tree::set node $values 
+    Array::set node $values 
     ret=$node
     return 0
   else
@@ -405,10 +417,10 @@ function tryPointer() {
   if [ $2 -eq $G_STAR ]; then
     declare -n ret=$1
     declare node values newNode
-    Tree node
+    Array node
     Stack values
 
-    Tree::set node $NODE_CLASS $G_POINTER
+    Array::set node $NODE_CLASS $G_POINTER
 
     declare nextType nextValue lineNum stateId
     nextToken nextType nextValue lineNum stateId
@@ -423,7 +435,7 @@ function tryPointer() {
       resetToken $stateId
     fi
 
-    Tree::set node $NODE_VALUE $values
+    Array::set node $NODE_VALUE $values
 
     ret=$node
     return 0
@@ -442,8 +454,8 @@ function tryDirectAbstractDeclarator() {
 function tryAbstractDeclarator() {
   declare -n ret=$1
   declare newNode node values
-  Tree node
-  Tree::set node $NODE_CLASS $G_ABSTRACT_DECLARATOR
+  Array node
+  Array::set node $NODE_CLASS $G_ABSTRACT_DECLARATOR
   Stack values
   declare nextType=$2 nextValue="$3" lineNum=$lineNum stateId
   saveState stateId
@@ -457,16 +469,16 @@ function tryAbstractDeclarator() {
   if tryDirectAbstractDeclarator newNode $nextType "$nextValue"; then
     Stack::shift values $newNode
   else
-    Stack::length values len
+    Stack::length len values
     # If we consumed an additional token (due to finding a pointer)
     if [ $len -gt 0 ]; then
       resetToken $stateid
     fi
   fi
 
-  Stack::length values len
+  Stack::length len values
   if [ $len -gt 0 ]; then
-    Tree:set node $NODE_VALUE $values
+    Array:set node $NODE_VALUE $values
 
     ret=$node
     return 0
@@ -482,8 +494,8 @@ function tryTypeName() {
     declare -n ret=$1
 
     declare node
-    Tree node
-    Tree::set node $NODE_CLASS $G_TYPE_NAME
+    Array node
+    Array::set node $NODE_CLASS $G_TYPE_NAME
 
     declare values
     Stack values
@@ -497,7 +509,7 @@ function tryTypeName() {
       resetToken $stateId
     fi
 
-    Tree::set node $NODE_VALUE $values
+    Array::set node $NODE_VALUE $values
 
     ret=$node
     return 0
@@ -518,9 +530,9 @@ function tryAtomicTypeSpecifier() {
         declare -n ret=$1
 
         declare node
-        Tree node
-        Tree::set node $NODE_CLASS $G_ATOMIC_TYPE_SPECIFIER
-        Tree::set node $NODE_VALUE $newNode
+        Array node
+        Array::set node $NODE_CLASS $G_ATOMIC_TYPE_SPECIFIER
+        Array::set node $NODE_VALUE $newNode
 
         ret=$node
         return 0
@@ -552,10 +564,10 @@ function tryStructOrUnion() {
   if [ $t -ne 0 ]; then
     declare -n ret=$1
     declare node
-    Tree node
+    Array node
     
-    Tree::set node $NODE_CLASS $G_STRUCT_OR_UNION
-    Tree::set node $NODE_TYPE $t
+    Array::set node $NODE_CLASS $G_STRUCT_OR_UNION
+    Array::set node $NODE_TYPE $t
 
     ret=$node
     return 0
@@ -573,22 +585,22 @@ function tryStructDeclarationList() {
   declare newNode
   if tryStructDeclaration newNode $2 "$3"; then
     declare node
-    Tree node
+    Array node
     declare values
     Stack values
 
-    Tree::set node $NODE_CLASS $G_STRUCT_DECLARATION_LIST
+    Array::set node $NODE_CLASS $G_STRUCT_DECLARATION_LIST
     Stack::shift values $newNode
 
     declare nextType nextValue lineNum
     nextToken nextType nextValue lineNum
     if tryStructDeclaration newNode $nextType "$nextValue"; then
       declare otherVals
-      Tree::get newNode $NODE_VALUE otherVals
+      Array::get otherVals newNode $NODE_VALUE
       Array::Merge values otherVals
     fi
 
-    Tree::set node $NODE_VALUE $values
+    Array::set node $NODE_VALUE $values
 
     ret=$node
     return 0
@@ -603,13 +615,13 @@ function tryStructUnionTypeSpecifier() {
   if tryStructOrUnion newNode $2 "$3"; then
     declare -n ret=$1
     declare node
-    Tree node
+    Array node
 
     declare nType
-    Tree::get newNode $NODE_TYPE nType
+    Array::get nType newNode $NODE_TYPE
 
-    Tree::set node $NODE_CLASS $G_STRUCT_OR_UNION_SPECIFIER
-    Tree::set node $NODE_TYPE $nType
+    Array::set node $NODE_CLASS $G_STRUCT_OR_UNION_SPECIFIER
+    Array::set node $NODE_TYPE $nType
 
     declare hadIdenOrBrace=0
 
@@ -617,14 +629,14 @@ function tryStructUnionTypeSpecifier() {
     nextToken nextType nextValue lineNum
     if tryIdentifier newNode $nextType "$nextValue"; then
       hadIdenOrBrace=1
-      Tree::set node $NODE_IDENTIFIER $newNode
+      Array::set node $NODE_IDENTIFIER $newNode
       nextToken nextType nextValue lineNum stateId
     fi
 
     if [ $nextType -eq $T_LBRACE ]; then
       # hadIdenOrBrace=1
       if tryStructDeclarationList newNode $nextType "$nextValue"; then
-        Tree::set node $NODE_VALUE $newNode
+        Array::set node $NODE_VALUE $newNode
 
         nextToken nextType nextValue lineNum
         if [ $nextType -eq $T_RBRACE ]; then
@@ -661,8 +673,8 @@ function tryEnumeratorList() {
 
     Stack::shift enums $newNode
     declare node
-    Tree node
-    Tree::set node $NODE_CLASS $G_ENUMERATOR_LIST
+    Array node
+    Array::set node $NODE_CLASS $G_ENUMERATOR_LIST
 
     declare nextType nextValue lineNum stateId
     nextToken nextType nextValue lineNum stateId
@@ -679,7 +691,7 @@ function tryEnumeratorList() {
     done
     resetToken $stateId
 
-    Tree::set node $NODE_VALUE $enums
+    Array::set node $NODE_VALUE $enums
 
     ret=$node
     return 0
@@ -693,21 +705,21 @@ function tryEnumSpecifier() {
   if [ $2 -eq $T_ENUM ]; then
     declare -n ret=$1
     declare node
-    Tree node
-    Tree::set node $NODE_CLASS $G_ENUM_SPECIFIER
+    Array node
+    Array::set node $NODE_CLASS $G_ENUM_SPECIFIER
 
 
     declare nextType nextValue lineNum stateId
     nextToken nextType nextValue lineNum stateId
     declare newNode
     if tryIdentifier newNode $nextType "$nextValue" $lineNum; then
-      Tree::set node $NODE_IDENTIFIER $newNode
+      Array::set node $NODE_IDENTIFIER $newNode
       nextToken nextType nextValue lineNum stateId
     fi
 
     if [ $nextType -eq $T_LBRACE ]; then
       if tryEnumeratorList newNode $nextType "$nextValue"; then
-        Tree::set node $NODE_VALUE $newNode
+        Array::set node $NODE_VALUE $newNode
         nextToken nextType nextValue lineNum stateId
         if [ $nextType -eq $T_COMMA ]; then
           nextToken nextType nextValue lineNum stateId
@@ -729,10 +741,10 @@ function tryTypeDefNameSpecifier() {
   if [ $2 -eq $T_IDENTIFIER ] && Array::inArray typeDefs "$3"; then
     declare -n ret=$1
     declare node
-    Tree node
+    Array node
 
-    Tree::set node $NODE_CLASS $G_TYPEDEF_NAME
-    Tree::set node $NODE_VALUE "$3"
+    Array::set node $NODE_CLASS $G_TYPEDEF_NAME
+    Array::set node $NODE_VALUE "$3"
 
     ret=$node
     return 0
@@ -751,10 +763,10 @@ function tryTypeSpecifier() {
 
     # General wrapper node to combine all the typeSpecifiers under a single node
     declare node
-    Tree node
+    Array node
 
-    Tree::set $NODE_TYPE $G_TYPE_SPECIFIER
-    Tree::set $NODE_VALUE $newNode
+    Array::set $NODE_TYPE $G_TYPE_SPECIFIER
+    Array::set $NODE_VALUE $newNode
 
     ret=$node
     return 0
@@ -800,10 +812,10 @@ function tryFunctionSpecifier() {
   if [ $t -ne 0 ]; then
     declare -n ret=$1
     declare node
-    Tree node
+    Array node
     
-    Tree::set node $NODE_CLASS $G_FUNCTION_SPECIFIER
-    Tree::set node $NODE_TYPE $t
+    Array::set node $NODE_CLASS $G_FUNCTION_SPECIFIER
+    Array::set node $NODE_TYPE $t
 
     ret=$node
     return 0
@@ -883,23 +895,23 @@ function tryTranslationUnit() {
   if tryExternalDeclaration newNode $2 "$3"; then
     declare -n ret=$1
     declare node values
-    Tree node
+    Array node
     Stack values
 
-    Tree::set node $NODE_CLASS $G_TRANSLATION_UNIT
+    Array::set node $NODE_CLASS $G_TRANSLATION_UNIT
     Stack::shift values $newNode
 
     declare nextType nextValue lineNum stateId
     nextToken nextType nextValue lineNum stateId
     if tryTranslationUnit newNode $nextType "$nextValue"; then
       declare otherVals
-      Tree::get newNode $NODE_VALUE otherVals
+      Array::get otherVals newNode $NODE_VALUE
       Array::merge values otherVals
     else
       resetToken $stateId
     fi
 
-    Tree::set node $NODE_VALUE $values
+    Array::set node $NODE_VALUE $values
   else
     return $NO_MATCH
   fi
@@ -907,6 +919,8 @@ function tryTranslationUnit() {
 
 function parseTokens() {
   # Check the scope rules in a second pass to make sure the declaration was in scope
+  declare scopeStack
+  Stack scopeStack
   declare enumConstants
   Stack enumConstants
   declare typeDefs
@@ -917,11 +931,11 @@ function parseTokens() {
   Stack oldValues
   Stack oldLineNumbers
   
-  declare abstractSyntaxTree
+  declare abstractSyntaxArray
   declare nextType nextValue lineNum
   nextToken nextType nextValue lineNum
 
-  if tryTranslationUnit abstractSyntaxTree $nextType "$nextValue"; then
+  if tryTranslationUnit abstractSyntaxArray $nextType "$nextValue"; then
     echo "Succesfully parsed tokens into AST"
   else
     parseError "Could not parse top-level syntax. You fucked up in one of the first lines." $lineNum

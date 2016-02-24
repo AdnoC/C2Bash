@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
+include "$C2BASH_HOME"/helperlibs/return.sh
 declare -gi STACK_EMPTY=987
 
 declare -gi STACK_INDEX=0
 
+# Pointer::stackPrefixVar, String::initialValue
 function Stack() {
   local stackPrefix="__stack$STACK_INDEX"
   # Store the values of the stack in a separate thing from just the prefix since we shouldn't be accessing stacks other than shifting unshiftping and peeking.
@@ -15,12 +17,12 @@ function Stack() {
     declare -gi "$stackLength=0"
     declare -ga "$stackVals=()"
   fi
-  declare -n ref=$1
-  ref=$stackPrefix
+  @return "$stackPrefix"
   STACK_INDEX=$STACK_INDEX+1
   return 0
 }
 
+# Pointer::stackPrefixVar
 function Stack::shift() {
   declare -n stck=${!1}Values
   declare -n  length=${!1}Length
@@ -29,41 +31,43 @@ function Stack::shift() {
   return 0
 }
 
+# Pointer::element, Pointer::stackPrefixVar
 function Stack::peek() {
-  declare -n stck=${!1}Values
-  declare -n length=${!1}Length
-  declare -n ret=$2
+  declare -n stck=${!2}Values
+  declare -n length=${!2}Length
 
   if [ $length -gt 0 ]; then
-    ret="${stck[$length-1]}"
+    @return "${stck[$length-1]}"
     return 0
   else
-    # I know this will bite me in the ass, but whatever. I'm still returning > 0 anyways.
-    ret=""
     return $STACK_EMPTY
   fi
 }
 
+# Pointer::stackPrefixVar
+# Pointer::element, Pointer::stackPrefixVar
 function Stack::unshift() {
-  declare -n length=${!1}Length
-  if [ $# -gt 1 ]; then
-    declare -n ret=$2
-  else
-    declare ret=''
-  fi
+  declare argLen="$#"
+  declare prefixVar=${!argLen}
+  declare -n length=${!prefixVar}Length
 
-  Stack::peek $1 ret
   if [ $length -gt 0 ]; then
+    declare elem
+    Stack::peek elem "$prefixVar"
+
+    if [ $# -gt 1 ]; then
+      @return "$elem"
+    fi
+
     let length=length-1
     return 0
   fi
-    echo 'stack empt'
   return $STACK_EMPTY
 }
 
+# Pointer::length, Pointer::stackPrefixVar
 function Stack::length() {
-  declare -n ret=$2
-  declare -n length=${!1}Length
-  ret=$length
+  declare -n length=${!2}Length
+  @return "$length"
   return 0
 }

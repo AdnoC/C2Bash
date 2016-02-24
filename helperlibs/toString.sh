@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
+include "$C2BASH_HOME"/helperlibs/return.sh
 
-# Pointer::stringRep, bool
+# Pointer::stringRep, Int::bool
 function boolToString() {
-  declare -n str=$1
   if [ "$2" -eq 0 ]; then
-    str="True"
+    @return "True"
   else
-    str="False"
+    @return "False"
   fi
 }

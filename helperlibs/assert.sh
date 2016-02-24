@@ -20,6 +20,7 @@ function assertEqual() {
   fi
 }
 
+# Int::bool1, Int::bool2
 function assertBool() {
   if  ( [ "$1" -eq 0 ] &&  [ "$2" -ne 0 ] ) || ( [ "$1" -ne 0 ] && [ "$2" -eq 0 ] ); then
     echoerr "Assertion error. Source $(caller)"

@@ -12,11 +12,10 @@ Queue lineNumbers
 
 # String::tokenName, String::tokenValue, Int::lineNumber
 function addToken() {
-echo "adding token $1"
+  echo "adding token $1"
   Queue::push tokenTypes "$1"
   Queue::push tokenValues "$2"
   Queue::push lineNumbers "$3"
-  # echo "-- $longestTokenName -- '$longestMatch'"
 }
 
 # String::line, Int::lineNum
@@ -100,16 +99,17 @@ function scanFile() {
   declare lineNum=0
   while read p; do
     scanLine "$p" $lineNum
-    # addToken $T_LINE_END
+    # addToken "$T_LINE_END" " " "$lineNum"
     let lineNum=lineNum+1
   done < "$1"
   echo "Finished scanning"
   declare len
   declare tok
   declare val
-  while Queue::length tokenTypes len && [ $len -gt 0 ]; do
-    Queue::pop tokenTypes tok
-    Queue::pop tokenValues val
+  echo "${__queue0Value[@]}"
+  while Queue::length len tokenTypes && [ $len -gt 0 ]; do
+    Queue::pop tok tokenTypes
+    Queue::pop val tokenValues
     echo "${__TOKEN_MAP[$tok]}  $val"
   done
 }
