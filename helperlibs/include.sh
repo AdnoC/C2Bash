@@ -49,7 +49,7 @@ function getRelPath() {
       # extra slash removal
       result="${forward_part:1}"
   fi
-  
+
   # Handle the case where source==target
   if [[ -z $result ]]; then
     result="."
@@ -71,5 +71,5 @@ function include() {
   done
   # If we made it here we haven't sourced it yet, so source it.
   source "$file"
-  __SOURCED_FILES+="$file"
+  __SOURCED_FILES+=("$file")
 }
