@@ -64,8 +64,15 @@ function Array::unset() {
 
 # Pointer::length, Pointer::array
 function Array::length() {
-  declare -n array=${!1}Values
+  declare -n array=${!2}Values
   @return "${#array}"
+  return 0
+}
+
+# Pointer::iterationString, Pointer::array
+function Array::iterationString() {
+  declare iterString="${!2}Values"
+  @return "$iterString"
   return 0
 }
 

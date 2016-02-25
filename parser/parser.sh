@@ -122,9 +122,11 @@ function resetToken() {
 
 # String::Error, Int::lineNumber
 function parseError() {
-  >&2 echo "Parse Error on line $2"
-  >&2 echo "$1"
-  >&2 echo "Note that lines with escaped newline characters aren't counted"
+  Queue::push parseErrors <<ERRORDOC
+Parse Error on line $2
+$1
+Note that lines with escaped newline characters aren't counted
+ERRORDOC
   exit $PARSE_ERROR
 }
 
@@ -925,6 +927,8 @@ function parseTokens() {
   Stack enumConstants
   declare typeDefs
   Stack typeDefs;
+  declare parseErrors
+  Queue parseErrors
 
   declare oldTypes oldValues oldLineNumbers
   Stack oldTypes
@@ -939,6 +943,12 @@ function parseTokens() {
     echo "Succesfully parsed tokens into AST"
   else
     parseError "Could not parse top-level syntax. You fucked up in one of the first lines." $lineNum
+    declare iter
+    Array::iterationString iter parseErrors
+    declare it
+    for it in "${!iter}"; do
+      >&2 echo "$it"
+    done
   fi
 }
 
