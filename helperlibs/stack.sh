@@ -22,10 +22,11 @@ function Stack() {
   return 0
 }
 
-# Pointer::stackPrefixVar
+# Pointer::stackPrefixVar, String::value
 function Stack::shift() {
   declare -n stck=${!1}Values
-  declare -n  length=${!1}Length
+  declare -n length=${!1}Length
+
   stck[$length]="$2"
   let length=length+1
   return 0

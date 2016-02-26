@@ -27,7 +27,6 @@ function Queue::push() {
   declare -n length=${!1}Length
 
   queue[$length]="$2"
-  declare -n length=${!1}Length
   let length=length+1
   return 0
 }

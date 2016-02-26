@@ -22,7 +22,7 @@ function Array() {
 
 # Pointer::element, String::array, Int::index
 function Array::get() {
-  declare -n array=${!1}Values
+  declare -n array=${!2}Values
   @return "${array[$3]}"
   return 0
 }
@@ -62,17 +62,39 @@ function Array::unset() {
   return 0
 }
 
+# Returns the number of elements in the array.
+# Ignores any skipped indexes
 # Pointer::length, Pointer::array
 function Array::length() {
   declare -n array=${!2}Values
-  @return "${#array}"
+  @return "${#array[@]}"
   return 0
 }
 
+# Pointer::indexesString, Pointer::array
+function Array::keys() {
+  declare -n array=${!2}Values
+  @return "${!array[*]}"
+  return 0
+}
+
+# A.K.A. realName
 # Pointer::iterationString, Pointer::array
 function Array::iterationString() {
   declare iterString="${!2}Values"
   @return "$iterString"
+  return 0
+}
+
+# Pointer::dst, String::src
+function Array::copy() {
+  declare newArr
+  declare -n array="${!2}Values"
+  Array newArr
+  for key in "${!array[@]}"; do
+    Array::set newArr "$key" "${array[$key]}"
+  done
+  @return "$newArr"
   return 0
 }
 
