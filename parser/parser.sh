@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
+include "$C2BASH_HOME"/helperlibs/return.sh
 include "$C2BASH_HOME"/helperlibs/queue.sh
 include "$C2BASH_HOME"/helperlibs/char.sh
 include "$C2BASH_HOME"/helperlibs/stack.sh
-include "$C2BASH_HOME"/helperlibs/tree.sh
+include "$C2BASH_HOME"/helperlibs/array.sh
 include "$C2BASH_HOME"/scanner/tokens.sh
 include "$C2BASH_HOME"/parser/grammarUnits.sh
 include "$C2BASH_HOME"/helperlibs/constantIds.sh
-declare -gi NO_MATCH=2314;
+declare -gi NO_MATCH=2314
 declare -gi PARSE_ERROR=528
+declare -gi FINISHED_TOKENS=9082
 # http://www.quut.com/c/ANSI-C-grammar-y.html
 # Or Annex A of http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf
 # Top level is a translation_unit
@@ -22,8 +24,7 @@ setId NODE_VALUE
 
 setId NODE_IDENTIFIER
 
-
-# All the try* functions return NO_MATCH if there wasn't a match
+# All the try * functions return NO_MATCH if there wasn't a match
 # They also take a Pointer::newNode as their first argument
 
 function enterScope() {
@@ -40,14 +41,17 @@ function exitScope() {
 
 # Pointer::tokenType, Pointer::tokenValue, Pointer::lineNumber, Pointer::stateId, Bool::noSkipWhitespace, Bool::noSkipComment
 function nextToken() {
-  declare -n ret1=$1
-  declare -n ret2=$2
-  declare -n ret3=$3
-  declare -n retId=$4
-
   declare stateId
   Stack::length stateId tokenTypes
-  retId=$stateId
+  if [ "$stateId" -eq 0 ]; then
+    if [ $# -gt 3 ]; then
+      @return "" "" "" 0
+      return $FINISHED_TOKENS
+    else
+      @return "" "" ""
+      return $FINISHED_TOKENS
+    fi
+  fi
 
   declare tType tVal lNum
   Stack::unshift tType tokenTypes
@@ -64,33 +68,33 @@ function nextToken() {
     Stack::shift oldValues "$tVal"
     Stack::shift oldLineNumbers "$lNum"
   done
-  ret1=$tType
-  ret2=$tVal
-  ret3=$lNum
+
+  if [ $# -gt 3 ]; then
+    @return "$tType" "$tVal" "$lNum" "$stateId"
+    return 0
+  else
+    @return "$tType" "$tVal" "$lNum"
+    return 0
+  fi
 }
 
 # Pointer::tokenType, Pointer::tokenValue, Pointer::lineNumber
 function getState() {
-  declare -n ret1=$1
-  declare -n ret2=$2
-  declare -n ret3=$3
-
   declare tType tVal lNum
   Stack::peek oldTypes tType
   Stack::peek oldValues tVal
   Stack::peek oldLineNumbers lNum
 
-  ret1=$tType
-  ret2="$tVal"
-  ret3=$lNum
+  @return "$tType" "$tVal" "$lNum"
+  return 0
 }
 
 # Pointer::stateId
 function saveState() {
-  declare -n ret=$1
   declare length
   Stack::length length tokenTypes
-  ret=$length
+  @return "$length"
+  return 0
 }
 
 # Int::stateId
@@ -118,20 +122,30 @@ function resetToken() {
 
     Stack::length length tokenTypes
   done
+  return 0;
+}
+
+# String::functionName, ...String::parameters
+function try() {
+  # declare __stateId
+  # saveState __stateId
+  declare __function="$1"
+  shift
+  if ! "$__function" "$@"; then
+    # resetToken "$__stateId"
+    return $NO_MATCH
+  fi
+  return 0
 }
 
 # String::Error, Int::lineNumber
 function parseError() {
-  Queue::push parseErrors <<ERRORDOC
-Parse Error on line $2
-$1
-Note that lines with escaped newline characters aren't counted
-ERRORDOC
-  exit $PARSE_ERROR
+  Queue::push parseErrors "$(printf "Parse Error on line %s\n%s\nNote that lines with escaped newline characters are not counted" "$2" "$1")"
+  return 0
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryIntConstant() {
+function intConstant() {
   declare t=0
   if [ $2 -eq $T_INTEGER_CONSTANT ] || { [ $2 -eq $T_CHARACTER_CONSTANT ] && t=1; }; then
     declare val=$3
@@ -140,13 +154,12 @@ function tryIntConstant() {
       val=$intVal
     fi
 
-    declare -n ret=$1
     declare node
     Array node
     Array::set node $NODE_CLASS $G_INTEGER_CONSTANT
     Array::set node $NODE_VALUE $intVal
 
-    ret=$node
+    @return "$node"
     return 0
   else
     return $NO_MATCH
@@ -154,16 +167,15 @@ function tryIntConstant() {
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryFloatConstant() {
+function floatConstant() {
   if [ $2 -eq $T_FLOATING_CONSTANT ]; then
-    declare -n ret=$1
 
     declare node
     Array node
     Array::set node $NODE_CLASS $G_FLOAT_CONSTANT
     Array::set node $NODE_VALUE $3
 
-    ret=$node
+    @return "$node"
     return 0;
   else
     return $NO_MATCH
@@ -171,16 +183,15 @@ function tryFloatConstant() {
 }
 
 # Pointer::newNode, Int::tokenType, String::tokenValue
-function tryEnumConstant() {
+function enumConstant() {
   if [ $2 -eq $T_IDENTIFIER ] && Array::inArray enumConstants "$3"; then
-    declare -n ret=$1
 
     declare node
     Array node
     Array::set node $NODE_CLASS $G_ENUMERATION_CONSTANT
     Array::set node $NODE_VALUE "$3"
 
-    ret=$node
+    @return "$node"
     return 0
   else
     return $NO_MATCH
@@ -188,12 +199,9 @@ function tryEnumConstant() {
 }
 
 # Pointer::newNode, Int::tokenType, String::tokenValue
-function tryConstant() {
-  if tryIntConstant node $2 "$3" || tryFloatConstant node "$2" "$3" || tryEnumConstant node $2 "$3"; then
-    if [ -z node ]; then
-      declare -n ret=$1
-      ret=$node
-    fi
+function constant() {
+  if try intConstant node $2 "$3" || try floatConstant node "$2" "$3" || try enumConstant node $2 "$3"; then
+    @return "$node"
     return 0
   else
     return $NO_MATCH
@@ -201,10 +209,9 @@ function tryConstant() {
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryString() {
+function string() {
   declare t=0
   if [ $2 -eq $T_STRING_CONSTANT ] || { [ $2 -eq $T_FUNC_NAME ] && t=1; }; then
-    declare -n ret=$1
 
     declare type=$G_STRING_LITERAL
     if [ $t -eq 1 ]; then
@@ -217,7 +224,7 @@ function tryString() {
     Array::set node $NODE_TYPE $G_FUNC_NAME
     Array::set node $NODE_VALUE "$3"
 
-    ret=$node
+    @return "$node"
     return 0
   else
     return $NO_MATCH
@@ -225,7 +232,7 @@ function tryString() {
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryBaseTypeSpecifier() {
+function baseTypeSpecifier() {
   declare t=0
   case $2 in
     $T_VOID)
@@ -268,30 +275,28 @@ function tryBaseTypeSpecifier() {
       ;;
   esac
   if [ $t -ne 0 ]; then
-    declare -n ret=$1
     declare node
     Array node
     Array::set node $NODE_CLASS $t
 
-    ret=$node
+    @return "$node"
     return 0
   else
     return $NO_MATCH
   fi
 }
 
-function tryConstantExpression() {
+function constantExpression() {
   #placeholder
   return 0
 }
 
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryEnumerator() {
+function enumerator() {
   declare newNode
-  if tryIdentifier newNode "$2" "$3"; then
+  if try identifier newNode "$2" "$3"; then
     Stack::shift enumConstants "$3"
-    declare -n ret=$1
 
     declare node
     Array node
@@ -302,16 +307,17 @@ function tryEnumerator() {
     nextToken nextType nextValue lineNum stateId
     if [ $nextType -eq $T_ASSIGN_OP ]; then
       nextToken nextType nextValue lineNum
-      if tryConstantExpression newNode $nextType "$nextValue"; then
+      if try constantExpression newNode $nextType "$nextValue"; then
         Array::set node $NODE_VALUE "$newNode"
       else
         parseError "Enumerators must be assigned a constant value if they are to be assigned" $lineNum
+        return $NO_MATCH
       fi
     else
       resetToken $stateid
     fi
 
-    ret=$node
+    @return "$node"
     return 0
   else
     return $NO_MATCH
@@ -319,7 +325,7 @@ function tryEnumerator() {
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryTypeQualifier() {
+function typeQualifier() {
   declare t=0
   case $2 in
     $T_CONT)
@@ -339,14 +345,13 @@ function tryTypeQualifier() {
   esac
 
   if [ $t -ne 0 ]; then
-    declare -n ret=$1
     declare node
     Array node
 
     Array::set node $NODE_CLASS $G_TYPE_QUALIFIER
     Array::set node $NODE_TYPE $t
 
-    ret=$node
+    @return "$node"
     return 0
   else
     return $NO_MATCH
@@ -354,10 +359,9 @@ function tryTypeQualifier() {
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function trySpecifierQualifierList() {
+function specifierQualifierList() {
   declare newNode
-  if tryTypeSpecifier newNode $2 "$3" || tryTypeQualifier newNode $2 "$3"; then
-    declare ret=$1
+  if try typeSpecifier newNode $2 "$3" || try typeQualifier newNode $2 "$3"; then
     declare node
     Array node
     declare values
@@ -368,7 +372,7 @@ function trySpecifierQualifierList() {
 
     declare nextType nextValue lineNum stateId
     nextToken nextType nextValue lineNum stateId
-    if trySpecifierQualifierList newNode $nextType "$nextValue"; then
+    if try specifierQualifierList newNode $nextType "$nextValue"; then
       declare otherVals
       Array::get otherVals newNode $NODE_VALUE
       Array::Merge values otherVals
@@ -378,7 +382,7 @@ function trySpecifierQualifierList() {
 
     Array::set node $NODE_VALUE $values
 
-    ret=$node
+    @return "$node"
     return 0
   else
     return $NO_MATCH
@@ -386,9 +390,9 @@ function trySpecifierQualifierList() {
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryTypeQualifierList() {
+function typeQualifierList() {
   declare newNode
-  if tryTypeQualifier newNode $2 "$3"; then
+  if try typeQualifier newNode $2 "$3"; then
     declare node values
     Array node
     Stack values
@@ -398,7 +402,7 @@ function tryTypeQualifierList() {
 
     declare nextType nextValue lineNum stateId
     nextToken nextType nextValue lineNum stateId
-    if tryTypeQualifier newNode $nextType "$nextValue"; then
+    if try typeQualifier newNode $nextType "$nextValue"; then
       declare otherVals
       Array::get otherVals newNode $NODE_VALUE
       Array::merge values otherVals
@@ -407,7 +411,7 @@ function tryTypeQualifierList() {
     fi
 
     Array::set node $values 
-    ret=$node
+    @return "$node"
     return 0
   else
     return $NO_MATCH
@@ -415,9 +419,8 @@ function tryTypeQualifierList() {
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryPointer() {
+function pointer() {
   if [ $2 -eq $G_STAR ]; then
-    declare -n ret=$1
     declare node values newNode
     Array node
     Stack values
@@ -426,12 +429,12 @@ function tryPointer() {
 
     declare nextType nextValue lineNum stateId
     nextToken nextType nextValue lineNum stateId
-    if tryTypeQualifierList newNode $nextType "$nextValue"; then
+    if try typeQualifierList newNode $nextType "$nextValue"; then
       Stack::shift values $newNode
       nextToken nextType nextValue lineNum stateId
     fi
 
-    if tryPointer newNode $nextType "$nextValue"; then
+    if try pointer newNode $nextType "$nextValue"; then
       Stack::shift values $newNode
     else
       resetToken $stateId
@@ -439,7 +442,7 @@ function tryPointer() {
 
     Array::set node $NODE_VALUE $values
 
-    ret=$node
+    @return "$node"
     return 0
   else
     return $NO_MATCH
@@ -447,14 +450,13 @@ function tryPointer() {
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryDirectAbstractDeclarator() {
+function directAbstractDeclarator() {
   #placeholder
   return 0
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryAbstractDeclarator() {
-  declare -n ret=$1
+function abstractDeclarator() {
   declare newNode node values
   Array node
   Array::set node $NODE_CLASS $G_ABSTRACT_DECLARATOR
@@ -462,13 +464,13 @@ function tryAbstractDeclarator() {
   declare nextType=$2 nextValue="$3" lineNum=$lineNum stateId
   saveState stateId
 
-  if tryPointer newNode $nextType "$nextValue"; then
+  if try pointer newNode $nextType "$nextValue"; then
     Stack::shift values $newNode
     nextToken nextType nextValue lineNum
   fi
   declare len
 
-  if tryDirectAbstractDeclarator newNode $nextType "$nextValue"; then
+  if try directAbstractDeclarator newNode $nextType "$nextValue"; then
     Stack::shift values $newNode
   else
     Stack::length len values
@@ -482,7 +484,7 @@ function tryAbstractDeclarator() {
   if [ $len -gt 0 ]; then
     Array:set node $NODE_VALUE $values
 
-    ret=$node
+    @return "$node"
     return 0
   else
     return $NO_MATCH
@@ -490,10 +492,9 @@ function tryAbstractDeclarator() {
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryTypeName() {
+function typeName() {
   declare newNode
-  if trySpecifierQualifierList newNode $2 "$3"; then
-    declare -n ret=$1
+  if try specifierQualifierList newNode $2 "$3"; then
 
     declare node
     Array node
@@ -505,7 +506,7 @@ function tryTypeName() {
 
     declare nextType nextValue lineNum stateId
     nextToken nextType nextValue lineNum stateId
-    if tryAbstractDeclarator newNode $nextType "$nextValue"; then
+    if try abstractDeclarator newNode $nextType "$nextValue"; then
       Stack::shift values $newNode
     else
       resetToken $stateId
@@ -513,7 +514,7 @@ function tryTypeName() {
 
     Array::set node $NODE_VALUE $values
 
-    ret=$node
+    @return "$node"
     return 0
   else
     return $NO_MATCH
@@ -521,28 +522,29 @@ function tryTypeName() {
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryAtomicTypeSpecifier() {
+function atomicTypeSpecifier() {
   if [ $2 -eq $T_ATOMIC ]; then
     declare nextType nextValue lineNum
     nextToken nextType nextValue lineNum
     if [ $nextType -eq $T_LPAREN ]; then
       nextToken nextType nextValue lineNum
       declare newNode
-      if tryTypeName newNode $nextType "nextValue"; then
-        declare -n ret=$1
+      if try typeName newNode $nextType "nextValue"; then
 
         declare node
         Array node
         Array::set node $NODE_CLASS $G_ATOMIC_TYPE_SPECIFIER
         Array::set node $NODE_VALUE $newNode
 
-        ret=$node
+        @return "$node"
         return 0
       else
         parseError "Atomic declarations must be followed with a type name" $lineNum
+        return $NO_MATCH
       fi
     else
       parseError "Atomic declarations must be followed with a type name in parenthases" $lineNum
+      return $NO_MATCH
     fi
   else
     return $NO_MATCH
@@ -550,7 +552,7 @@ function tryAtomicTypeSpecifier() {
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryStructOrUnion() {
+function structOrUnion() {
   declare t=0
   case $2 in
     $T_STRUCT)
@@ -564,28 +566,27 @@ function tryStructOrUnion() {
   esac
 
   if [ $t -ne 0 ]; then
-    declare -n ret=$1
     declare node
     Array node
     
     Array::set node $NODE_CLASS $G_STRUCT_OR_UNION
     Array::set node $NODE_TYPE $t
 
-    ret=$node
+    @return "$node"
     return 0
   else
     return $NO_MATCH
   fi
 }
 
-function tryStructDeclaration() {
+function structDeclaration() {
   #placeholder
   return 0
 }
 
-function tryStructDeclarationList() {
+function structDeclarationList() {
   declare newNode
-  if tryStructDeclaration newNode $2 "$3"; then
+  if try structDeclaration newNode $2 "$3"; then
     declare node
     Array node
     declare values
@@ -596,7 +597,7 @@ function tryStructDeclarationList() {
 
     declare nextType nextValue lineNum
     nextToken nextType nextValue lineNum
-    if tryStructDeclaration newNode $nextType "$nextValue"; then
+    if try structDeclaration newNode $nextType "$nextValue"; then
       declare otherVals
       Array::get otherVals newNode $NODE_VALUE
       Array::Merge values otherVals
@@ -604,7 +605,7 @@ function tryStructDeclarationList() {
 
     Array::set node $NODE_VALUE $values
 
-    ret=$node
+    @return "$node"
     return 0
   else
     return $NO_MATCH
@@ -612,10 +613,9 @@ function tryStructDeclarationList() {
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryStructUnionTypeSpecifier() {
+function structUnionTypeSpecifier() {
   declare newNode
-  if tryStructOrUnion newNode $2 "$3"; then
-    declare -n ret=$1
+  if try structOrUnion newNode $2 "$3"; then
     declare node
     Array node
 
@@ -629,7 +629,7 @@ function tryStructUnionTypeSpecifier() {
 
     declare nextType nextValue lineNum stateId
     nextToken nextType nextValue lineNum
-    if tryIdentifier newNode $nextType "$nextValue"; then
+    if try identifier newNode $nextType "$nextValue"; then
       hadIdenOrBrace=1
       Array::set node $NODE_IDENTIFIER $newNode
       nextToken nextType nextValue lineNum stateId
@@ -637,26 +637,29 @@ function tryStructUnionTypeSpecifier() {
 
     if [ $nextType -eq $T_LBRACE ]; then
       # hadIdenOrBrace=1
-      if tryStructDeclarationList newNode $nextType "$nextValue"; then
+      if try structDeclarationList newNode $nextType "$nextValue"; then
         Array::set node $NODE_VALUE $newNode
 
         nextToken nextType nextValue lineNum
         if [ $nextType -eq $T_RBRACE ]; then
-          ret=$node
+          @return "$node"
           return 0
         else
           parseError "Missing '}' after struct declaration list" $lineNum
+          return $NO_MATCH
         fi
       else
         parseError "Braces after specifying a struct/union require a declaration list" $lineNum
+        return $NO_MATCH
       fi
     else
       if [ $hadIdenOrBrace -ne 0 ]; then
         resetToken $stateId
-        ret=$node
+        @return "$node"
         return 0
       else
         parseError "Stuct/Union specificying requires an identifier or a declaration list" $lineNum
+        return $NO_MATCH
       fi
     fi
   else
@@ -666,12 +669,11 @@ function tryStructUnionTypeSpecifier() {
 
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryEnumeratorList() {
+function enumeratorList() {
   declare enums
   Stack enums
   declare newNode
-  if tryEnumerator newNode "$2" "$3"; then
-    declare -n ret=$1
+  if try enumerator newNode "$2" "$3"; then
 
     Stack::shift enums $newNode
     declare node
@@ -684,9 +686,10 @@ function tryEnumeratorList() {
       nextToken nextType nextValue lineNum stateId
       if [ $nextType -eq $T_COMMA ]; then
         parseError "Found two commas where an enumeration constant was expected" $lineNum
+        return $NO_MATCH
       fi
 
-      if tryEnumerator newNode "$nextType" "$nextValue"; then
+      if try enumerator newNode "$nextType" "$nextValue"; then
         Stack::shift enums $newNode
         nextToken nextType nextValue lineNum stateId
       fi
@@ -695,7 +698,7 @@ function tryEnumeratorList() {
 
     Array::set node $NODE_VALUE $enums
 
-    ret=$node
+    @return "$node"
     return 0
   else
     return $NO_MATCH
@@ -703,9 +706,8 @@ function tryEnumeratorList() {
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryEnumSpecifier() {
+function enumSpecifier() {
   if [ $2 -eq $T_ENUM ]; then
-    declare -n ret=$1
     declare node
     Array node
     Array::set node $NODE_CLASS $G_ENUM_SPECIFIER
@@ -714,13 +716,13 @@ function tryEnumSpecifier() {
     declare nextType nextValue lineNum stateId
     nextToken nextType nextValue lineNum stateId
     declare newNode
-    if tryIdentifier newNode $nextType "$nextValue" $lineNum; then
+    if try identifier newNode $nextType "$nextValue" $lineNum; then
       Array::set node $NODE_IDENTIFIER $newNode
       nextToken nextType nextValue lineNum stateId
     fi
 
     if [ $nextType -eq $T_LBRACE ]; then
-      if tryEnumeratorList newNode $nextType "$nextValue"; then
+      if try enumeratorList newNode $nextType "$nextValue"; then
         Array::set node $NODE_VALUE $newNode
         nextToken nextType nextValue lineNum stateId
         if [ $nextType -eq $T_COMMA ]; then
@@ -728,27 +730,14 @@ function tryEnumSpecifier() {
         fi
         if [ $nextType -ne $T_RBRACE ]; then
           parseError "Expected '}' to end enumerator list" "$lineNum"
+          return $NO_MATCH
         fi
       fi
     else
       resetToken $stateId
     fi
-  else
-    return $NO_MATCH
-  fi
-}
 
-# Pointer::newNode, Int::tokenType, String::value
-function tryTypeDefNameSpecifier() {
-  if [ $2 -eq $T_IDENTIFIER ] && Array::inArray typeDefs "$3"; then
-    declare -n ret=$1
-    declare node
-    Array node
-
-    Array::set node $NODE_CLASS $G_TYPEDEF_NAME
-    Array::set node $NODE_VALUE "$3"
-
-    ret=$node
+    @return "$node"
     return 0
   else
     return $NO_MATCH
@@ -756,12 +745,27 @@ function tryTypeDefNameSpecifier() {
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryTypeSpecifier() {
+function typeDefNameSpecifier() {
+  if [ $2 -eq $T_IDENTIFIER ] && Array::inArray typeDefs "$3"; then
+    declare node
+    Array node
+
+    Array::set node $NODE_CLASS $G_TYPEDEF_NAME
+    Array::set node $NODE_VALUE "$3"
+
+    @return "$node"
+    return 0
+  else
+    return $NO_MATCH
+  fi
+}
+
+# Pointer::newNode, Int::tokenType, String::value
+function typeSpecifier() {
   declare newNode
-  if tryBaseTypeSpecifier newNode $2 "$3" || tryAtomicTypeSpecifier newNode $2 "$3" || \
-      tryStructUnionTypeSpecifier newNode $2 "$3" || tryEnumSpecifier newNode $2 "$3" || \
-      tryTypeDefNameSpecifier newNode $2 "$3"; then
-    declare -n ret=$1
+  if try baseTypeSpecifier newNode $2 "$3" || try atomicTypeSpecifier newNode $2 "$3" || \
+      try structUnionTypeSpecifier newNode $2 "$3" || try enumSpecifier newNode $2 "$3" || \
+      try typeDefNameSpecifier newNode $2 "$3"; then
 
     # General wrapper node to combine all the typeSpecifiers under a single node
     declare node
@@ -770,7 +774,7 @@ function tryTypeSpecifier() {
     Array::set $NODE_TYPE $G_TYPE_SPECIFIER
     Array::set $NODE_VALUE $newNode
 
-    ret=$node
+    @return "$node"
     return 0
   else
     return $NO_MATCH
@@ -778,27 +782,28 @@ function tryTypeSpecifier() {
 
 }
 
-function tryInitDeclaratorList() {
+function initDeclaratorList() {
   #placeholder
   return 0
 }
 
-function tryStaticAssertDeclaration() {
+function staticAssertDeclaration() {
   #placeholder
   return 0
 }
 
-function tryDeclarationSpecifiers() {
+function declarationSpecifiers() {
   #placeholder
   return 0
 }
-function tryDeclaration() {
+function declaration() {
   #placeholder
   return 0
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryFunctionSpecifier() {
+function functionSpecifier() {
+echo "functionSpecifier"
   declare t=0
   case $2 in
     $T_INLINE)
@@ -812,14 +817,13 @@ function tryFunctionSpecifier() {
   esac
 
   if [ $t -ne 0 ]; then
-    declare -n ret=$1
     declare node
     Array node
     
     Array::set node $NODE_CLASS $G_FUNCTION_SPECIFIER
     Array::set node $NODE_TYPE $t
 
-    ret=$node
+    @return "$node"
     return 0
   else
     return $NO_MATCH
@@ -827,58 +831,61 @@ function tryFunctionSpecifier() {
 }
 
 # Pointer::newNode, Int::tokenType, String::tokenValue
-function tryIdentifier() {
+function identifier() {
+echo "identifier"
   #placeholder
-  if [ $1 -eq $T_IDENTIFIER ] && ! tryEnumConstant node $2 "$3" && ! tryTypeSpecifier $2 "$3"; then
+  if [ $1 -eq $T_IDENTIFIER ] && ! try enumConstant node $2 "$3" && ! try typeSpecifier $2 "$3"; then
     return 0
   else
     return $NO_MATCH
   fi
 }
 
-function tryGenericSelection() {
+function genericSelection() {
   #placeholder
   return 0
 }
 
-function tryExpression() {
+function expression() {
   #placeholder
   return 0
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryPostfixExpression() {
+function postfixExpression() {
+echo "postfixExpression"
   declare newNode
-  if tryPrimaryExpression newNode $2 "$3"; then
+  if try primaryExpression newNode $2 "$3"; then
     echo 'hi'
     #placeholder
   fi
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryPrimaryExpression() {
+function primaryExpression() {
+echo "primaryExpression"
   declare newNode
-  declare -n ret=$1
-  if tryIdentifier newNode $2 "$3" || tryConstant newNode $2 "$3" || tryString newNode $2 "$3" || \
-      tryGenericSelection newNode $2 "$3"; then
-    ret=$newNode
+  if try identifier newNode $2 "$3" || try constant newNode $2 "$3" || try string newNode $2 "$3" || \
+      try genericSelection newNode $2 "$3"; then
+    @return "$newNode"
     return 0
   else
     if [ $2 -eq $T_LPAREN ]; then
       declare nextType nextValue lineNum stateId
       nextToken nextType nextValue lineNum stateId
-      if tryExpression newNode $nextType "$nextValue"; then
+      if try expression newNode $nextType "$nextValue"; then
         nextToken nextType nextValue lineNum stateId
         if [ $nextType -eq $T_RPAREN ]; then
-          ret=$newNode
+          @return "$newNode"
           return 0
         else
           parseError "Expected ')' after primary expression" $lineNum
+          return $NO_MATCH
         fi
       else
         # Not sure if this should actually be an error or we should just reset and return no match
         parseError "Expected expression after '('" $lineNum
-        resetToken $stateId
+        return $NO_MATCH
       fi
       
     fi
@@ -886,16 +893,23 @@ function tryPrimaryExpression() {
   return $NO_MATCH
 }
 
-function tryExternalDeclaration() {
+function externalDeclaration() {
+declare len
+
+if Queue::length len tokenTypes && [ $len -eq 0 ]; then
+  return 0
+else
+  return $NO_MATCH
+fi
   #placeholder
   return 0
 }
 
 # Pointer::newNode, Int::tokenType, String::value
-function tryTranslationUnit() {
+function translationUnit() {
+echo "transUnit"
   declare newNode
-  if tryExternalDeclaration newNode $2 "$3"; then
-    declare -n ret=$1
+  if try externalDeclaration newNode $2 "$3"; then
     declare node values
     Array node
     Stack values
@@ -905,7 +919,7 @@ function tryTranslationUnit() {
 
     declare nextType nextValue lineNum stateId
     nextToken nextType nextValue lineNum stateId
-    if tryTranslationUnit newNode $nextType "$nextValue"; then
+    if try translationUnit newNode $nextType "$nextValue"; then
       declare otherVals
       Array::get otherVals newNode $NODE_VALUE
       Array::merge values otherVals
@@ -914,6 +928,8 @@ function tryTranslationUnit() {
     fi
 
     Array::set node $NODE_VALUE $values
+    @return "$node"
+    return 0
   else
     return $NO_MATCH
   fi
@@ -939,17 +955,21 @@ function parseTokens() {
   declare nextType nextValue lineNum
   nextToken nextType nextValue lineNum
 
-  if tryTranslationUnit abstractSyntaxArray $nextType "$nextValue"; then
+  if try translationUnit abstractSyntaxArray $nextType "$nextValue"; then
     echo "Succesfully parsed tokens into AST"
   else
-    parseError "Could not parse top-level syntax. You fucked up in one of the first lines." $lineNum
+    parseError "Could not parse top-level syntax." $lineNum
+    echo "ELSE"
+    echo "${__queue3Values[@]}"
     declare iter
     Array::iterationString iter parseErrors
     declare it
     for it in "${!iter}"; do
-      >&2 echo "$it"
+      >&2 printf "\n%s" "$it"
     done
   fi
 }
 
-parseTokens
+if [ "${#FUNCNAME[@]}" -eq "0" ]; then
+  parseTokens
+fi
