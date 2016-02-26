@@ -1,0 +1,37 @@
+### Coding standards
+
+This file is just so that I can enforce standards and don't get lazy half-way
+
+## General
+
+Inlcude all required scripts at the top of the file, even if it would be included in main.sh (like return.sh).
+This is so I can test scripts individually.
+
+All return codes should be declared globally at the top of the file they are used in. They should be given a hard-coded random number
+
+Scripts should start with `#!/usr/bin/env bash`
+
+## Functions
+
+Should always explicitly return a return code.
+
+Any value-returns should be done with `@return`
+
+There should be a comment before each function with type info for its arguments
+
+Functions take names of variables to store return info in before any other arguments
+
+Any variables modified after a function calls `@return` should be re-declared before modification  
+This prevents errors due to the variable being unset in the `@return`
+
+## Variable values vs references
+
+String values should be stored and passed directly, unless specified otherwise.
+
+Arrays should always be passed by reference
+
+When calling functions:
+
+* Pass names of variables to store return values in unquoted
+
+* Pass variables which contain identifiers for data structures (arrays, queues, stacks, trees) unquoted and by name of the conaining variable if your are "passing the structure itself" and the value of the identifier if you are "passing a reference to the structure" (i.e. store a refernce to the array in another arrray)
