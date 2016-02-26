@@ -1,21 +1,19 @@
 #!/usr/bin/env bash
 # source scanner/tokens.sh
 include "$C2BASH_HOME"/helperlibs/queue.sh
-
 include "$C2BASH_HOME"/scanner/tokens.sh
+include "$C2BASH_HOME"/helperlibs/array.sh
 
 # Currently doesn't support multi-line comments
 
-Queue tokenTypes
-Queue tokenValues
-Queue lineNumbers
 
 # String::tokenName, String::tokenValue, Int::lineNumber
 function addToken() {
-  echo "adding token $1"
+  # echo "adding token $1"
   Queue::push tokenTypes "$1"
   Queue::push tokenValues "$2"
   Queue::push lineNumbers "$3"
+  return 0
 }
 
 # String::line, Int::lineNum
@@ -94,24 +92,45 @@ function scanLine() {
   done
 }
 
+# Pointer::tokenTypeQueue, Pointer::tokenValueQueue, Pointer::tokenLineNumber, String::file
 function scanFile() {
+  declare tokenTypes tokenValues lineNumbers
+  Queue tokenTypes
+  Queue tokenValues
+  Queue lineNumbers
+
   # Bash/read handles concatenating lines ending with '/'
   declare lineNum=0
   while read p; do
     scanLine "$p" $lineNum
     # addToken "$T_LINE_END" " " "$lineNum"
     let lineNum=lineNum+1
-  done < "$1"
-  echo "Finished scanning"
-  declare len
-  declare tok
-  declare val
-  echo "${__queue0Value[@]}"
-  while Queue::length len tokenTypes && [ $len -gt 0 ]; do
-    Queue::pop tok tokenTypes
-    Queue::pop val tokenValues
-    echo "${__TOKEN_MAP[$tok]}  $val"
-  done
+  done < "$4"
+
+  if [ -n "$__DEBUG" ]; then
+    declare len
+    declare tok
+    declare val
+    declare keys
+    Array::keys keys tokenTypes
+    for key in $keys; do
+      Array::get tok tokenTypes "$key"
+      Array::get val tokenValues "$key"
+      echo "${__TOKEN_MAP[$tok]}  $val"
+    done
+  fi
+
+  @return "$tokenTypes" "$tokenValues" "$lineNumbers"
+  return 0
 }
 
-scanFile "$1"
+if [ "${#FUNCNAME[@]}" -eq "0" ]; then
+  if [ -n "$__DEBUG" ]; then
+    echo "Scanning File '$1'"
+  fi
+  declare -g tokenTypes tokenValues lineNumbers
+  scanFile tokenTypes tokenValues lineNumbers "$1"
+  if [ -n "$__DEBUG" ]; then
+    echo "Finished scanning"
+  fi
+fi
