@@ -1,0 +1,99 @@
+# Identifier
+
+children
+
+* String
+
+* The name of the identifier.
+
+# Integer Constant
+
+The base can be Decimal, Octal, or Hex
+
+children
+
+    * Array
+
+        + Value
+
+            * The positive value of the int, converted to decimal
+
+        * Sign
+
+            + Bool whether it is positive or negative
+
+        * Suffixes
+
+            + Type specification
+
+            * Unsigned, Long, or Long-Long
+
+# Floating Constant
+
+The base can be Decimal or Hex
+
+children
+
+    + Array
+
+        * Value
+
+            + The positive value of the float, converted to decimal. besides exponents?
+
+        * Sign
+
+            + Whether it is positive or negative
+
+        * Type
+
+            + Type of the const, either float or long
+
+        * Exponent
+
+            + The exponent part
+
+# Enumeration Constant
+
+children
+
+    * Identifier
+
+        + A Identifier node of what the name of the constant is
+
+# Character Constant
+
+children
+
+    * Array
+
+        + Value
+
+            * The literal value of the character
+
+            * Converted to the visual representation if it is escaped or something
+
+        + Type
+
+            * The type the char is. (Given by the preceding 'L', 'u', or 'U')
+
+                + unsigned char
+
+                + unsigned wchar_t
+
+                + char16_t
+
+                + char32_t
+
+# String Literals
+
+values
+
+    * Array
+
+        + Value
+
+            * The literal value of the string
+
+        + Encoding
+
+            *
