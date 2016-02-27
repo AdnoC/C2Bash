@@ -7,6 +7,12 @@ C has namespaces for:
 * labels
 * everything else
 
+
+## Msc.
+
+All functions have an implicitly defined identifier `__func__`
+Has the declaration `static const char __func__[] = "<FUNC_NAME>"`
+
 &nbsp;
 
 ## AST
