@@ -1,6 +1,6 @@
 # Identifier
 
-children
+Children
 
 * String
 
@@ -10,90 +10,329 @@ children
 
 The base can be Decimal, Octal, or Hex
 
-children
+Children
 
-    * Array
+* Array
 
-        + Value
+    + Value
 
-            * The positive value of the int, converted to decimal
+        * The positive value of the int, converted to decimal
 
-        * Sign
+    * Sign
 
-            + Bool whether it is positive or negative
+        + Bool whether it is positive or negative
 
-        * Suffixes
+    * Suffixes
 
-            + Type specification
+        + Type specification
 
-            * Unsigned, Long, or Long-Long
+        * Unsigned, Long, or Long-Long
 
 # Floating Constant
 
 The base can be Decimal or Hex
 
-children
+Children
 
-    + Array
++ Array
 
-        * Value
+    * Value
 
-            + The positive value of the float, converted to decimal. besides exponents?
+        + The positive value of the float, converted to decimal. besides exponents?
 
-        * Sign
+    * Sign
 
-            + Whether it is positive or negative
+        + Whether it is positive or negative
 
-        * Type
+    * Type
 
-            + Type of the const, either float or long
+        + Type of the const, either float or long
 
-        * Exponent
+    * Exponent
 
-            + The exponent part
+        + The exponent part
 
 # Enumeration Constant
 
-children
+Children
 
-    * Identifier
+* Identifier
 
-        + A Identifier node of what the name of the constant is
+    + A Identifier node of what the name of the constant is
 
 # Character Constant
 
-children
+Children
 
-    * Array
+* Array
 
-        + Value
+    + Value
 
-            * The literal value of the character
+        * The literal value of the character
 
-            * Converted to the visual representation if it is escaped or something
+        * Converted to the visual representation if it is escaped or something
 
-        + Type
+    + Type
 
-            * The type the char is. (Given by the preceding 'L', 'u', or 'U')
+        * The type the char is. (Given by the preceding 'L', 'u', or 'U')
 
-                + unsigned char
+            + unsigned char
 
-                + unsigned wchar_t
+            + unsigned wchar_t
 
-                + char16_t
+            + char16_t
 
-                + char32_t
+            + char32_t
 
 # String Literals
 
-values
+Children
 
-    * Array
+* Array
 
-        + Value
+    + Value
 
-            * The literal value of the string
+        * The literal value of the string
 
-        + Encoding
+    + Encoding
 
-            *
+        * The encoding of the string. (Given by the prefix 'u8', 'u', 'U' or 'L')
+
+        * Either 'wide' or 'unicode'
+
+# Primary Expression
+
+Children
+
+* Array
+
+    * Type
+
+        + The type of expression this is
+
+        + Either Identifier, Constant, String-Literal, Expression, or Generic-Selection
+
+    * Value
+
+        + The node corresponding to the type of primary expression this is
+
+    + Type
+
+        * The type this expression resolves to. Can be a partial type
+
+    * Constant Status
+
+        + Bool. Whether this expression contains only constant values/variablesk
+
+Unwrap nested primary expressions e.g. (((("Hello World"))))
+
+# Generic Selection
+
+Throw UnsupportedFeature as a ParseError
+
+## Postfix Operator (Group)
+
+# Array Subscript
+
+vaues
+
+* Array
+
+    + "Array"
+
+        * An expression for the array this is subscripting
+
+        * Must be a pointer type
+
+    + Index
+
+        * An expression with the value of the index this subscript is for
+
+        * Must have an int type
+
+    * Type
+
+        * The type the 'Array' element points to
+
+    + Constant Status
+
+        * False (I think. Need to look into it)
+
+# Function Call
+
+Designated by a postfix expression followed by parenthases
+
+Children
+
+* Array
+
+    + Function Identifier
+
+        * An expression that identifies the function to call
+
+    + Function Node
+
+        * The node for the function this is refering to
+
+        * Should have type of either void or a non-array type
+
+    + Arguments
+
+        * Expressions for each argument passed to the function call
+
+        * Look at page 81 for real specification on how to handle arguments with respect to the function prototype
+        * If the Function Node value has a prototype
+
+            + The number of args should match the number of params in the prototype
+            + Each expression should have a type that can be assigned to the type specified in the prototype
+
+        * If it does not or the prototype has a '...'
+
+            + There can be any number of arguments
+            + Each argument should have integer promotion applied to it (float -> double)
+
+
+    + Type
+
+        * The type that the Function Value node returns
+
+        * Is void if it doesn't return or have a return type
+
+    * Constant Status
+
+        + Bool. True if the function is const?
+
+# Stucture / Union Member
+
+Look into the special guarantee mentioned in 6.5.2.3.6
+
+Children
+
+* Array
+
+    + Structure Identifier
+
+        * An expression that identifies the struce who's member this is accessing
+
+        * Should have a type of of struct or union if using the '.' operator and a type of a pointer pointing to a struct or union if using the '->' operator
+
+    + Member Identifier
+
+        * An identifier for the field that should be accessed
+
+    + Type
+
+        * The type the member has.
+
+    * Constant Status
+
+        + Bool. True if the member is const
+
+# Postfix Increment / Decrement
+
+Children
+
+* Array
+
+    + Operand
+
+        * The thing to change
+
+        * Should have a correct type
+
+    * Operation
+
+        + Either increment or decrement
+
+    + Type
+
+        * The type the Operand has
+
+    * Constant Status
+
+        + False
+
+# Compound Literal
+
+Children
+
+* Array
+
+    + Type
+
+        * Whatever the type encoled in parentheses is
+
+    + Values
+
+        * Array
+
+            + Initializer List nodes
+
+    + Constant Status
+
+        * True? if the initializer list is constant?
+
+## Unary Operators (group)
+
+# Prefix Increment / Decrement
+
+Children
+
+* Array
+
+    + Identifier
+
+        * The name of the thing to change
+
+    + Operand
+
+        * The thing to change
+
+        * Should have a correct type
+
+    * Operation
+
+        + Either increment or decrement
+
+    + Type
+
+        * The type the Operand has
+
+    * Constant Status
+
+        + False
+
+# Address / Indirection
+
+# Address (`&` operator)
+
+Cancels a `*` operator when applied to the result of it
+Does something similar with the `[]` operator
+
+Children
+
+* Array
+
+    + Operand
+
+        * The thing to get the address of
+
+        * The function designator to get a pointer to
+
+    + Type
+
+        * Pointer to the type the operand has
+
+    + Constant Status
+
+        * False?
+
+# Indirection
+
+Children
+
+* Array
+
+    + Operand
+
+        * 
