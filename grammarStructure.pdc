@@ -1,3 +1,5 @@
+All Grammar nodes have a child "Grammar Unit" Which contains an identifier for the unit of grammar.
+
 # Identifier
 
 Children
@@ -38,7 +40,7 @@ Children
 
     * Value
 
-        + The positive value of the float, converted to decimal. besides exponents?
+        + The positive value of the float, converted to decimal. Besides exponents?
 
     * Sign
 
@@ -122,7 +124,7 @@ Children
 
     * Constant Status
 
-        + Bool. Whether this expression contains only constant values/variablesk
+        + Bool. Whether this expression contains only constant values/variables
 
 Unwrap nested primary expressions e.g. (((("Hello World"))))
 
@@ -134,7 +136,7 @@ Throw UnsupportedFeature as a ParseError
 
 # Array Subscript
 
-vaues
+Children
 
 * Array
 
@@ -160,7 +162,7 @@ vaues
 
 # Function Call
 
-Designated by a postfix expression followed by parenthases
+Designated by a postfix expression followed by parentheses
 
 Children
 
@@ -172,7 +174,7 @@ Children
 
     + Function Node
 
-        * The node for the function this is refering to
+        * The node for the function this is referring to
 
         * Should have type of either void or a non-array type
 
@@ -202,7 +204,7 @@ Children
 
         + Bool. True if the function is const?
 
-# Stucture / Union Member
+# Structure / Union Member
 
 Look into the special guarantee mentioned in 6.5.2.3.6
 
@@ -212,7 +214,7 @@ Children
 
     + Structure Identifier
 
-        * An expression that identifies the struce who's member this is accessing
+        * An expression that identifies the struct who's member this is accessing
 
         * Should have a type of of struct or union if using the '.' operator and a type of a pointer pointing to a struct or union if using the '->' operator
 
@@ -260,7 +262,7 @@ Children
 
     + Type
 
-        * Whatever the type encoled in parentheses is
+        * Whatever the type in parentheses is
 
     + Values
 
@@ -270,7 +272,7 @@ Children
 
     + Constant Status
 
-        * True? if the initializer list is constant?
+        * True? If the initializer list is constant?
 
 ## Unary Operators (group)
 
@@ -325,9 +327,9 @@ Children
 
     + Constant Status
 
-        * False?
+        * True if it is a function designator or has a const type?
 
-# Indirection
+# Indirection (`*` operator)
 
 Children
 
@@ -335,4 +337,588 @@ Children
 
     + Operand
 
-        * 
+        * The pointer to the thing to get
+
+        * Needs to have a pointer type
+
+    + Type
+
+        * The type the operand points to
+
+    + Constant Status
+
+        * True if points to const type?
+
+# Unary Arithmetic Operators
+
+# Positive Value (`+`operator)
+
+Children
+
+* Array
+
+    + Operand
+
+        * The thing to get the positive value of
+
+        * Integer promotion is applied to it
+
+    + Type
+
+        * The type of the operand
+
+    + Constant Status
+
+        + True if operand is constant
+
+# Negated Value (`-` operator)
+
+Children
+
+* Array
+
+    + Operand
+
+        * The thing to get the negated value of
+
+        * Integer promotion is applied to it
+
+    + Type
+
+        * The type of the operand
+
+    + Constant Status
+
+        + True if operand is constant
+
+# Bitwise Complement (`~` operator)
+
+Children
+
+* Array
+
+    + Operand
+
+        * The thing to get the bitwise complement of
+
+        * Integer promotion is applied to it
+
+    + Type
+
+        * The type of the operand
+
+    + Constant Status
+
+        + True if operand is constant
+
+# Logical Negation (`!` operator)
+
+Children
+
+* Array
+
+    + Operand
+
+        * The thing to get the logical negation of
+
+    + Type
+
+        * int
+
+    + Constant Status
+
+        + True if operand is constant
+
+# Size Of Expression (`sizeof <expression>` operator)
+
+Children
+
+* Array
+
+    + Operand
+
+        * The thing to get the size of
+
+        * Cannot have a function or incomplete type
+
+    + Type
+
+        * int (More specifically, a size_t type)
+
+    + Constant Status
+
+        * True if the operand isn't a variable length array type
+
+# Size Of Type (`sizeof(<type>)` operator)
+
+Children
+
+* Array
+
+    + Operand
+
+        * The name of the type to get the size of
+
+        * Cannot have a function or incomplete type
+
+    + Type
+
+        * int (More specifically, a size_t type)
+
+    + Constant Status
+
+        * True if the operand isn't a variable length array type
+
+# Alignment Of Type (`_Alignof(<type>)` operator)
+
+Children
+
+* Array
+
+    + Operand
+
+        * The name of the type to get the alignment requirement of
+
+        * Cannot have a function or incomplete type
+
+    + Type
+
+        * int (More specifically, a size_t type)
+
+    + Constant Status
+
+        * No clue
+
+# Cast Expression
+
+Children
+
+* Array
+
+    + Operand
+
+        * The expression to be cast to a type
+
+    + Type
+
+        * The type we are casting the operand to
+
+# Multiplicative Expression
+
+Children
+
+* Array
+
+    + Operand 1
+
+        * The first operand in this expression
+
+        * Should have arithmetic type
+
+        * Should be int if modulo
+
+    + Operand 2
+
+        * The second operand in this expression
+
+        * Should have arithmetic type
+
+        * Should be int if modulo
+
+    + Operation
+
+        * Either multiplication, division, or modulo
+
+    + Type
+
+        * Check rules for specifics
+
+    + Constant Status
+
+        * True if both operands are const
+
+## Additive Expression (Group)
+
+# Addition
+
+Children
+
+* Array
+
+    + Operand 1
+
+        * One thing to add
+
+        * Should have an arithmetic type or a pointer if operand 2 is an int
+
+    + Operand 2
+
+        * The second thing to add
+
+        * Should have an arithmetic type or a pointer if operand 1 is an int
+
+    + Type
+
+        * Pointer if one of the operands is a pointer, otherwise see rules
+
+    + Constant Status
+
+        * True if both operands are const
+
+# Subtraction
+
+Type rules for operands
+
+* Both arithmetic
+
+* Both pointers to compatible complete object types
+
+* Operand 1 is pointer and Operand 2 is int
+
+Children
+
+* Array
+
+    + Operand 1
+
+        * The thing to subtract from
+
+    + Operand 2
+
+        * The thing to subtract
+
+    + Type
+
+        * Pointer if one of the operands had the type of pointer
+
+        * ptrdiff_t if both operands are pointers
+
+        * See rules otherwise
+
+    + Constant Status
+
+        * True if both operands are const
+
+# Shift Expression
+
+Children
+
+* Array
+
+    + Operand 1
+
+        * The thing to shift
+
+        * Should have an int type
+
+        * Promoted
+
+    + Operand 2
+
+        * The amount to shift by
+
+        * Should have an int type
+
+    + Type
+
+        * The type of the promoted Operand 1
+
+    + Constant Status
+
+        * True if both operands are const
+
+# Relational Expression
+
+Types of the operands
+
+* Should both have a real type
+
+* Should both be pointers to compatible object types
+
+Children
+
+* Array
+
+    + Operand 1
+
+        * The thing to base the comparison on
+
+    + Operand 2
+
+        * The thing to compare operand 1 to
+
+    + Operation
+
+        * Either 'less than', 'less than equal to', 'greater that', or 'greater than equal to'
+
+    + Type
+
+        * int
+
+    + Constant Status
+
+        + True if both operands are const
+
+# Equality Expression
+
+Types of the expression should
+
+* Both have an arithmetic type
+
+* Both be pointers to compatible types
+
+* One be a pointer to an object type the other a pointer to void
+
+* One be a pointer and the oher a null pointer constant
+
+Children
+
+* Array
+
+    + Operand 1
+
+        * The first thing to compare
+
+    + Operand 2
+
+        + The second thing to compare
+
+    + Operation
+
+        * Either equal or not equal
+
+    + Type
+
+        * int
+
+    + Constant Status
+
+        * True if both operands are const
+
+# Bitwise And Expression
+
+Children
+
+* Array
+
+    + Operand 1
+
+        * The first thing to perform bitwise operations on
+
+        * Should be an integer type
+
+    + Operand 2
+
+        * The second thing to perform bitwise operations on
+
+        * Should be an integer type
+
+    + Operation
+
+        * Either 'and', 'exclusive or', or 'inclusive or'
+
+    + Type
+
+        * int
+
+    + Constant Status
+
+        * True if both operands are const
+
+        * Additional circumstances for const for each operation (e.g. true if 'and' and on is const 0)
+
+# Logical Expression
+
+Children
+
+* Array
+
+    + Operand 1
+
+        * The first thing to try
+
+        * Should have a scalar type
+
+    + Operand 2
+
+        * The second thing to try
+
+        * Should have a scalar type
+
+    + Operation
+
+        * Either 'and' or 'or'
+
+    + Type
+
+        * int
+
+    + Constant Status
+
+        * True if both operands are const
+
+        * True if 'and' and first operand is const false
+
+        * True if 'or' and first operand is const true
+
+# Conditional Expression
+
+Types for operands in this expression
+
+* Both have an arithmetic type
+
+* Both have the same structure or union type
+
+* Both have void type
+
+* Both be pointers to compatible types
+
+* One is a pointer and other is a null pointer constant
+
+* One is a pointer to an object type and the other is a pointer to void
+
+Children
+
+* Array
+
+    + Test
+
+        * The boolean expression to test
+
+        * Should have a scalar type
+
+    + Operand 1
+
+        * The thing to return if test is true
+
+    + Operand 2
+
+        * The thing to return if test is false
+
+    + Type
+
+        * If both operands are arithmetic types, see conversion rules
+
+        * If both are struct/union types, it is that type
+
+        * If both are void, it is void
+
+        * If one is a pointer, it is a pointer to the type it points to
+
+# Assignment Expression
+
+Check page 102 for more complete type rules...
+
+Children
+
+* Array
+
+    + Operand 1
+
+        + The thing to assign to
+
+        + Should be a modifiable l-value
+
+        * Should have a compatible type with operand 2
+
+    + Operand 2
+
+        * The value to assign to operand 1
+
+        * Is expanded to the appropriate expression with operand 1 as the first operand and the original operand 2 as the second operand if using something other than simple assignment
+
+    + Type
+
+        * The type operand 1 has
+
+    + Constant Status
+
+        + True if (the expanded) operand 2 is const (a.k.a. false if using non-simple assignment)
+
+# Expression
+
+Children
+
+* Array
+
+    + Void Expressions
+
+        * Array
+
+            + Expressions that need to be evaluated but not returned
+
+    + Final Expression
+
+        * Last expression in the comma-separated expression list
+
+    + Type
+
+        * The type the Final Expression has
+
+    + Constant Status
+
+        * True if has no Void Expressions and Final Expression is const
+
+# Constant Expression
+
+Children
+
+* Array
+
+    + Expression
+
+        * The expression that needs to be constant
+
+        * Should contain no sub-expressions that:
+
+            + Assign
+
+            + Increment
+
+            + Decrement
+
+            + Call functions
+
+            + Comma-separated expressions
+
+# Static Assertion
+
+Children
+
+* Array
+
+    + Test
+
+        * The constant expression to test
+
+    + Message
+
+        * A string literal to display if Test is 0
+
+# Declaration
+
+Children
+
+* Array
+
+    + Specifiers
+
+        * Array
+
+            + Specifiers (storage-class, type, type-qualifier, function, or alignment) to apply to the declarators
+
+    + Declarator List
+
+        * Array
+
+            + Init Declarators that are being declared
+
+            + Must have at least one
+
+# Storage Class Specifier
+
+Children
+
+* Type
+
+    + One of typedef, extern, static, \_Thread_local, 
