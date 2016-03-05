@@ -7,8 +7,7 @@ declare -gi STACK_INDEX=0
 # Pointer::stackPrefixVar, String::initialValue
 function Stack() {
   local stackPrefix="__stack$STACK_INDEX"
-  # Store the values of the stack in a separate thing from just the prefix since we shouldn't be accessing stacks other than shifting unshiftping and peeking.
-  local stackVals=$stackPrefix"Values"
+  local stackVals=$stackPrefix
   local stackLength=$stackPrefix"Length"
   if [ $# -gt 1 ]; then
     declare -gi "$stackLength=1"
@@ -24,7 +23,7 @@ function Stack() {
 
 # Pointer::stackPrefixVar, String::value
 function Stack::shift() {
-  declare -n stck=${!1}Values
+  declare -n stck=${!1}
   declare -n length=${!1}Length
 
   stck[$length]="$2"
@@ -34,7 +33,7 @@ function Stack::shift() {
 
 # Pointer::element, Pointer::stackPrefixVar
 function Stack::peek() {
-  declare -n stck=${!2}Values
+  declare -n stck=${!2}
   declare -n length=${!2}Length
 
   if [ $length -gt 0 ]; then

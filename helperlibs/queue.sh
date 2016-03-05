@@ -7,7 +7,7 @@ declare -gi QUEUE_INDEX=0
 # Pointer::queueRefVar, String::initialValue
 function Queue() {
   local queuePrefix="__queue$QUEUE_INDEX"
-  local queueVals=$queuePrefix"Values"
+  local queueVals=$queuePrefix
   local queueLength=$queuePrefix"Length"
   if [ $# -gt 1 ]; then
     declare -gi "$queueLength=1"
@@ -23,7 +23,7 @@ function Queue() {
 }
 
 function Queue::push() {
-  declare -n queue=${!1}Values
+  declare -n queue=${!1}
   declare -n length=${!1}Length
 
   queue[$length]="$2"
@@ -33,7 +33,7 @@ function Queue::push() {
 
 # Pointer::element, Pointer::queuePrefixVar
 function Queue::peek() {
-  declare -n queue=${!2}Values
+  declare -n queue=${!2}
   declare -n length=${!2}Length
 
   if [ $length -gt 0 ]; then
@@ -49,7 +49,7 @@ function Queue::peek() {
 function Queue::pop() {
   declare argLen="$#"
   declare prefixVar=${!argLen}
-  declare -n queue=${!prefixVar}Values
+  declare -n queue=${!prefixVar}
   declare -n length=${!prefixVar}Length
 
   if [ $length -gt 0 ]; then

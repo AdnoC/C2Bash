@@ -113,10 +113,12 @@ function scanFile() {
     declare val
     declare keys
     Array::keys keys tokenTypes
+    declare tokName
     for key in $keys; do
       Array::get tok tokenTypes "$key"
       Array::get val tokenValues "$key"
-      echo "${__TOKEN_MAP[$tok]}  $val"
+      Array::get tokName __TOKEN_MAP $tok
+      echo "$tokName  $val"
     done
   fi
 

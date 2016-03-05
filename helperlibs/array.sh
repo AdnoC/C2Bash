@@ -3,12 +3,13 @@ include "$C2BASH_HOME"/helperlibs/return.sh
 
 declare -gi NOT_IN_ARRAY=243
 declare -gi NEXT_ARRAY_INDEX=0
+declare -gi IS_NOT_ARRAY=45234
 
 # Stacks and Queues are Arrays, but not all Arrays are not Stacks or Queues
 # Pointer::arrayRefVar, String::initialValue
 function Array() {
   local arrayPrefix="__array$NEXT_ARRAY_INDEX"
-  local arrayVals=$arrayPrefix"Values"
+  local arrayVals=$arrayPrefix
   if [ $# -gt 1 ]; then
     declare -ga "$arrayVals=(\"$2\")"
   else
@@ -22,21 +23,21 @@ function Array() {
 
 # Pointer::element, String::array, Int::index
 function Array::get() {
-  declare -n array=${!2}Values
+  declare -n array=${!2}
   @return "${array[$3]}"
   return 0
 }
 
 # Pointer::array, Int::index, String::value
 function Array::set {
-  declare -n array=${!1}Values
+  declare -n array=${!1}
   array[$2]="$3"
   return 0
 }
 #
 # Pointer::oldValue, Pointer::array, Int::index, String::value
 function Array::replace {
-  declare -n array=${!2}Values
+  declare -n array=${!2}
   declare oldVal
   oldVal="${arrray[$3]}"
   array[$3]="$4"
@@ -51,7 +52,7 @@ function Array::unset() {
   declare argLen="$#"
   let argLen=argLen-1
   declare prefixVar=${!argLen}
-  declare -n array=${!prefixVar}Values
+  declare -n array=${!prefixVar}
 
   declare oldVal
   oldVal="${array[$#]}"
@@ -66,14 +67,14 @@ function Array::unset() {
 # Ignores any skipped indexes
 # Pointer::length, Pointer::array
 function Array::length() {
-  declare -n array=${!2}Values
+  declare -n array=${!2}
   @return "${#array[@]}"
   return 0
 }
 
 # Pointer::indexesString, Pointer::array
 function Array::keys() {
-  declare -n array=${!2}Values
+  declare -n array=${!2}
   @return "${!array[*]}"
   return 0
 }
@@ -81,7 +82,7 @@ function Array::keys() {
 # A.K.A. realName
 # Pointer::iterationString, Pointer::array
 function Array::iterationString() {
-  declare iterString="${!2}Values"
+  declare iterString="${!2}"
   @return "$iterString"
   return 0
 }
@@ -89,7 +90,7 @@ function Array::iterationString() {
 # Pointer::dst, String::src
 function Array::copy() {
   declare newArr
-  declare -n array="${!2}Values"
+  declare -n array="${!2}"
   Array newArr
   for key in "${!array[@]}"; do
     Array::set newArr "$key" "${array[$key]}"
@@ -103,7 +104,7 @@ function Array::copy() {
 function Array::inArray() {
   declare arrayName=${!1}
   if [[ "$arrayName" =~ ^(__stack|__queue).* ]]; then
-    declare -n array=$arrayName"Values"
+    declare -n array=$arrayName
   else
     declare -n array=${!1}
   fi
@@ -119,8 +120,17 @@ function Array::inArray() {
 # Maybe should be called concat instead of merge
 # Pointer::arrayToMergeInto, Pointer::array2
 function Array::merge() {
-  declare -n array1=${!1}Values
-  declare -n array2=${!2}Values
+  declare -n array1=${!1}
+  declare -n array2=${!2}
   array1+=("${array2[@]}")
   return 0
+}
+
+# Pointer::arrayName
+function Array::isArray() {
+  if [[ "$(declare -p "${!1}")" =~ ^declare\ -[aA] ]]; then
+    return 0
+  else
+    return $IS_NOT_ARRAY
+  fi
 }
