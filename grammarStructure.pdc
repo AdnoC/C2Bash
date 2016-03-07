@@ -669,7 +669,7 @@ Types of the expression should
 
 * One be a pointer to an object type the other a pointer to void
 
-* One be a pointer and the oher a null pointer constant
+* One be a pointer and the other a null pointer constant
 
 Children
 
@@ -919,6 +919,212 @@ Children
 
 Children
 
-* Type
+* Storage Specifier
 
-    + One of typedef, extern, static, \_Thread_local, 
+    + One of typedef, extern, static, \_Thread_local, auto, or register
+
+    + Can only have one of these nodes in a declaration, except \_Thread_local can be with extern or static
+
+    + Should be applied to all members of a aggregate object unless its typedef
+
+# Type Specifier
+
+At leasts one needs to be given in each declaration
+
+Children
+
+* Array
+
+    + Specifier Type
+
+        * What type of thing this is specifying
+
+        * Either primitive or aggregate
+
+    + Type
+
+        * If Specifier Type is primitive, an identifier for the final type
+
+        * If Specifier Type is aggregate, the node for the appropriate aggregate type
+
+    + Raw Type
+
+        * Array
+
+        * If Specifier Type is primitive, this is the raw list of types hat denote the final type
+
+# Structure / Union Specifier
+
+Add to struct namespace if given an Identifier and Declaration List
+Children
+
+* Array
+
+    + Specifier Type
+
+        * Either structure or union
+
+    + Identifier
+
+        * An identifier (tag) for the structure
+
+        * Used to reference a previously defined structure / union type so that you don't need to keep yping the definition
+
+    + Declaration List
+
+        * Array?
+
+        * The definition of the type
+
+        * Is needed if no identifier is given
+
+# Enum Specifier
+
+Add to struct namespace if given an Identifier and an Enumeraor List
+
+Children
+
+* Array
+
+    + Identifier
+
+        * An identifier (tag) for the enum
+
+    + Enumerator List
+
+        * Array
+
+        * List of enumeration constants for this enum
+
+# Enum Constant
+
+Children
+
+* Array
+
+    + Identifier
+
+        * The name for the enum constant
+
+    + Value
+
+        * An optional explicitly set value for this enum
+
+        * Must be a constant expression
+
+        * Must have type int
+
+# Atomic Type Specifier
+
+Throw UnsupportedFeature as a ParseError
+
+# Type Qualifier
+
+Children
+
+* Qualifier
+
+    + One of const, restrict, volatile
+
+    + Only 1st level pointers (int\*, but not int\*\*) can have restrict
+
+# Function Specifier
+
+Only to be used when declaring an identifier for a function
+
+Children
+
+* Specifier
+
+    + Either inline or \_Noreturn
+
+# Alignment Specifier
+
+Children
+
+* Alignment
+
+    + The alignment
+
+    + Should be a const expression with type int
+
+    + If it was the form \_Alignas(type-name), the const expression is \_Alignof(type-name)
+
+# Declarator
+
+Only the top-level declarator (this node type) should declare an identifier
+
+Children
+
+* Array
+
+    + Identifier
+
+        * The name of thee variable this is declaring
+
+    + Children Declarators
+
+        * Additional declaration info such as pointer/array/function things
+
+# Pointer Declarator
+
+Children
+
+* Array
+
+    + Type Qualifiers
+
+        * Array
+
+        * Qualifiers that apply to the type this is pointing to
+
+    + Children Declarators
+
+        * Additional declaration info such as pointer/array/function things
+
+# Array Declarator
+
+Children
+
+* Array
+
+    + Is Static
+
+        * Bool. Whether or not the static keyword was used inside the []
+
+        * Should only be used in a declaration of a function parameter
+
+    + Is Variably Modified
+
+        * Bool. Whether or not there is a \* in place of a length expression
+
+    + Length Expression
+
+        * Should have type int
+
+        * Doesn't have to be constant, but if it is it should have a value > 0
+
+    + Type Qualifiers
+
+        * Array
+
+        * Qualifiers that apply to the things this array contains
+
+        * Should only be used in a declaration of a function parameter
+
+    + Children Declarators
+
+        * Additional declaration info such as pointer/array/function things
+
+# Function Declarator
+
+Children
+
+* Array
+
+    + Is K & R Style Params
+
+        * Bool. Whether or not the function uses K & R style params
+
+    + Identifier List
+
