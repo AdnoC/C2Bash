@@ -1,0 +1,106 @@
+   Scanning File
+    T_IDENTIFIER -> main
+    T_WHITESPACE -> 	
+    T_LPAREN -> (
+    T_RPAREN -> )
+    T_LBRACE -> <%
+    T_IDENTIFIER -> printf
+    T_LPAREN -> (
+    T_STRING_CONSTANT -> "Hello Worldn"
+    T_RPAREN -> )
+    T_SEMICOLON -> ;
+    T_IDENTIFIER -> printf
+    T_LPAREN -> (
+    T_STRING_CONSTANT -> ""
+    T_RPAREN -> )
+    T_SEMICOLON -> ;
+    T_INT -> int
+    T_WHITESPACE ->  
+    T_IDENTIFIER -> i
+    T_WHITESPACE ->  
+    T_ASSIGN_OP -> =
+    T_WHITESPACE ->  
+    T_INTEGER_CONSTANT -> 0
+    T_SEMICOLON -> ;
+    T_IDENTIFIER -> i
+    T_INCR -> ++
+    T_SEMICOLON -> ;
+    T_INT -> int
+    T_WHITESPACE ->  
+    T_IDENTIFIER -> i2
+    T_WHITESPACE ->  
+    T_ASSIGN_OP -> =
+    T_WHITESPACE ->  
+    T_INTEGER_CONSTANT -> 212341
+    T_SEMICOLON -> ;
+    T_INT -> int
+    T_WHITESPACE ->  
+    T_IDENTIFIER -> a
+    T_LBRACKET -> [
+    T_INTEGER_CONSTANT -> 3
+    T_RBRACKET -> ]
+    T_SEMICOLON -> ;
+    T_LPAREN -> (
+    T_STAR -> *
+    T_IDENTIFIER -> a
+    T_RPAREN -> )
+    T_ASSIGN_OP -> =
+    T_INTEGER_CONSTANT -> 4
+    T_SEMICOLON -> ;
+    T_INT -> int
+    T_WHITESPACE ->  
+    T_STAR -> *
+    T_IDENTIFIER -> p
+    T_WHITESPACE ->  
+    T_ASSIGN_OP -> =
+    T_WHITESPACE ->  
+    T_LPAREN -> (
+    T_INT -> int
+    T_WHITESPACE ->  
+    T_LBRACKET -> [
+    T_RBRACKET -> ]
+    T_RPAREN -> )
+    T_LBRACE -> {
+    T_INTEGER_CONSTANT -> 2
+    T_COMMA -> ,
+    T_WHITESPACE ->  
+    T_INTEGER_CONSTANT -> 4
+    T_RBRACE -> }
+    T_SEMICOLON -> ;
+    T_BOOL -> _Bool
+    T_WHITESPACE ->  
+    T_IDENTIFIER -> _ident
+    T_WHITESPACE ->  
+    T_ASSIGN_OP -> =
+    T_WHITESPACE ->  
+    T_IDENTIFIER -> i
+    T_WHITESPACE ->  
+    T_EQ -> ==
+    T_WHITESPACE ->  
+    T_IDENTIFIER -> i2
+    T_SEMICOLON -> ;
+    T_IDENTIFIER -> i
+    T_INCR -> ++
+    T_PLUS -> +
+    T_IDENTIFIER -> i2
+    T_SEMICOLON -> ;
+    T_LPAREN -> (
+    T_STAR -> *
+    T_IDENTIFIER -> a
+    T_RPAREN -> )
+    T_WHITESPACE ->  
+    T_ASSIGN_OP -> =
+    T_WHITESPACE ->                                       
+    T_INTEGER_CONSTANT -> 2
+    T_SEMICOLON -> ;
+    T_IDENTIFIER -> printf
+    T_LPAREN -> (
+    T_STRING_CONSTANT -> "a = %dn"
+    T_COMMA -> ,
+    T_WHITESPACE ->  
+    T_STAR -> *
+    T_IDENTIFIER -> a
+    T_RPAREN -> )
+    T_SEMICOLON -> ;
+    T_RBRACE -> }
+   Finished scanning

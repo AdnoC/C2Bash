@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 include "$C2BASH_HOME"/helperlibs/return.sh
 
-declare -gi NOT_IN_ARRAY=243
 declare -gi NEXT_ARRAY_INDEX=0
+
+declare -gi NOT_IN_ARRAY=243
 declare -gi IS_NOT_ARRAY=45234
 
 # Stacks and Queues are Arrays, but not all Arrays are not Stacks or Queues
@@ -128,7 +129,7 @@ function Array::merge() {
 
 # Pointer::arrayName
 function Array::isArray() {
-  if [[ "$(declare -p "${!1}")" =~ ^declare\ -[aA] ]]; then
+  if [[ "$(declare -p "${!1}")" =~ ^declare\ -[aA] ]] 2>/dev/null; then
     return 0
   else
     return $IS_NOT_ARRAY

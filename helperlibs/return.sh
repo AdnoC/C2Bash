@@ -4,6 +4,7 @@ declare -g __DEFERRED_DECLARE
 # Pass debug taps to functions. Means you don't have to make the trap in every function.
 set -o functrace
 
+unalias -a
 # Allows alias expansion in non-interactive shells.
 shopt -s expand_aliases
 # Alias lets you implicitly pass "$*"
